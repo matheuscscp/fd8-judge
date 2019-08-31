@@ -2,12 +2,9 @@
 
 RBAC query:
 
-```
-select
-	id
-from user_roles as ur
-	inner join role_permissions as rp on ur.role_id = rp.role_id
-where
-	ur.id = 3 and 'cagar' ~ rp.permission
-limit 1;
+```sql
+SELECT rp
+FROM user_roles ur, role_permissions rp
+WHERE ur.user_id = <user primary key> AND ur.role_id = rp.role_id AND '< method + path >' ~ rp.permission
+LIMIT 1;
 ```
