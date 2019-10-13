@@ -1,6 +1,6 @@
 // +build integration
 
-package lib_test
+package downloading_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/matheuscscp/fd8-judge/lib"
+	"github.com/matheuscscp/fd8-judge/judge/downloading"
 	"github.com/matheuscscp/fd8-judge/testing/factory"
 )
 
@@ -27,7 +27,8 @@ func TestDownloadFile(t *testing.T) {
 	const relativePath = "./TestDownloadFile.tmp"
 	const payload = "PAYLOAD"
 	const bytesToBeDownloaded = int64(len(payload))
-	bytesDownloaded, err := lib.DownloadFile(
+	downloader := downloading.DefaultDownloader()
+	bytesDownloaded, err := downloader.DownloadFile(
 		relativePath,
 		fmt.Sprintf("http://localhost:%d/dummy", port),
 		nil,
