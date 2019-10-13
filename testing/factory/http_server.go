@@ -50,7 +50,7 @@ func (f *HTTPServerFactory) NewDummy() (net.Listener, *http.Server, error) {
 	go func() {
 		err := server.Serve(listener)
 		if err != http.ErrServerClosed {
-			panic(fmt.Errorf("error on http.Server.Serve(): %v", err))
+			panic(fmt.Errorf("error on dummy http.Server.Serve(): %v", err))
 		}
 	}()
 
