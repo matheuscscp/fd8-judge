@@ -4,4 +4,10 @@ go:
 sudo: false
 services:
 - docker
-script: make test
+jobs:
+  include:
+  - stage: lint
+    install: make setup
+    script: make lint
+  - stage: test
+    script: make test
