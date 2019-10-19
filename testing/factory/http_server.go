@@ -35,7 +35,7 @@ func (f *HTTPServerFactory) NewDummy() (net.Listener, *http.Server, error) {
 		const bytesToBeWritten = len(payload)
 		bytesWritten, err := w.Write([]byte(payload))
 		if err != nil {
-			panic(fmt.Errorf("error writting dummy HTTP server response: %v", err))
+			panic(fmt.Errorf("error writing dummy HTTP server response: %v", err))
 		}
 		if bytesWritten != bytesToBeWritten {
 			panic(fmt.Errorf(

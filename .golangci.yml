@@ -1,2 +1,57 @@
+# golangci-linter configuration
+# See https://github.com/golangci/golangci-lint#config-file for reference.
+
 run:
-  timeout: 5m
+  build-tags:
+    - unit
+    - integration
+  skip-dirs:
+    - protogen/
+
+linters-settings:
+  depguard:
+    list-type: blacklist
+    include-go-root: true
+    packages:
+      - log                       # prefer github.com/sirupsen/logrus
+      - github.com/gogo/protobuf  # prefer github.com/golang/protobuf
+      - github.com/pkg/errors     # prefer golang.org/x/xerrors
+      - golang.org/x/xerrors      # prefer fmt.Errorf with error wrapping
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 25
+  golint:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0
+  govet:
+    # report about shadowed variables
+    check-shadowing: false
+  lll:
+    line-length: 140
+    tab-width: 4
+  maligned:
+    # print struct with more effective memory layout or not, false by default
+    suggest-new: true
+  misspell:
+    locale: US
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - depguard
+    - errcheck
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - govet
+    - ineffassign
+    - megacheck # gosimple, staticcheck and unused as a single linter
+    - misspell
+    - prealloc
+    - scopelint
+    - structcheck
+    - typecheck
+    - unconvert
+    - varcheck
