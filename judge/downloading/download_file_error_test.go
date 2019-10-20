@@ -17,41 +17,61 @@ import (
 func TestDownloadFileError(t *testing.T) {
 	var mockDependencies *downloading.MockFileDownloaderDependencies
 
+	type (
+		testInput struct {
+			relativePath string
+			url          string
+			headers      http.Header
+		}
+		testOutput struct {
+			bytes int64
+			err   error
+		}
+		testOutputProps struct {
+			errStr    string
+			errUnwrap error
+		}
+	)
 	var tests = map[string]struct {
-		relativePath string
-		url          string
-		headers      http.Header
-		bytes        int64
-		err          error
-		errStr       string
-		errUnwrap    error
-		mocks        func()
+		input    testInput
+		output   testOutput
+		outProps testOutputProps
+		mocks    func()
 	}{
 		"build-download-request-error": {
-			url:       "mockURL",
-			err:       &downloading.BuildDownloadRequestError{Wrapped: fmt.Errorf("error")},
-			errStr:    "failed to build download request: error",
-			errUnwrap: fmt.Errorf("error"),
+			output: testOutput{
+				err: &downloading.BuildDownloadRequestError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "failed to build download request: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
 			mocks: func() {
-				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "mockURL", nil).Return(nil, fmt.Errorf("error"))
+				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"do-download-request-error": {
-			url:       "mockURL",
-			err:       &downloading.DoDownloadRequestError{Wrapped: fmt.Errorf("error")},
-			errStr:    "failed to do download request: error",
-			errUnwrap: fmt.Errorf("error"),
+			output: testOutput{
+				err: &downloading.DoDownloadRequestError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "failed to do download request: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
 			mocks: func() {
-				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "mockURL", nil).Return(nil, nil)
+				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
 				mockDependencies.EXPECT().DoRequest(nil).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"unexpected-status-in-download-response-error": {
-			url:    "mockURL",
-			err:    &downloading.UnexpectedStatusInDownloadResponseError{Status: "status"},
-			errStr: "received unexpected status in download response: status",
+			output: testOutput{
+				err: &downloading.UnexpectedStatusInDownloadResponseError{Status: "status"},
+			},
+			outProps: testOutputProps{
+				errStr: "received unexpected status in download response: status",
+			},
 			mocks: func() {
-				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "mockURL", nil).Return(nil, nil)
+				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
 				mockDependencies.EXPECT().DoRequest(nil).Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
@@ -60,12 +80,15 @@ func TestDownloadFileError(t *testing.T) {
 			},
 		},
 		"create-file-error": {
-			url:       "mockURL",
-			err:       &downloading.CreateFileError{Wrapped: fmt.Errorf("error")},
-			errStr:    "failed to create file to store downloaded data: error",
-			errUnwrap: fmt.Errorf("error"),
+			output: testOutput{
+				err: &downloading.CreateFileError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "failed to create file to store downloaded data: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
 			mocks: func() {
-				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "mockURL", nil).Return(nil, nil)
+				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
 				mockDependencies.EXPECT().DoRequest(nil).Return(&http.Response{
 					StatusCode: 200,
 					Body:       ioutil.NopCloser(nil),
@@ -76,23 +99,23 @@ func TestDownloadFileError(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			// mock
+			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockDependencies = downloading.NewMockFileDownloaderDependencies(ctrl)
 			test.mocks()
 
 			downloader := downloading.FileDownloader{Dependencies: mockDependencies}
-			bytes, err := downloader.DownloadFile(test.relativePath, test.url, test.headers)
+			bytes, err := downloader.DownloadFile(test.input.relativePath, test.input.url, test.input.headers)
 			errStr := ""
 			if err != nil {
 				errStr = err.Error()
 			}
 			errUnwrap := errors.Unwrap(err)
-			assert.Equal(t, test.bytes, bytes)
-			assert.Equal(t, test.err, err)
-			assert.Equal(t, test.errStr, errStr)
-			assert.Equal(t, test.errUnwrap, errUnwrap)
+			assert.Equal(t, test.output.bytes, bytes)
+			assert.Equal(t, test.output.err, err)
+			assert.Equal(t, test.outProps.errStr, errStr)
+			assert.Equal(t, test.outProps.errUnwrap, errUnwrap)
 		})
 	}
 }
