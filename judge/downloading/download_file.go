@@ -3,6 +3,8 @@ package downloading
 import (
 	"io"
 	"net/http"
+
+	"github.com/matheuscscp/fd8-judge/errors"
 )
 
 // DownloadFile downloads a file and stores it in the given relative path.
@@ -11,7 +13,7 @@ func (f *FileDownloader) DownloadFile(relativePath, url string, headers http.Hea
 	// create request object
 	req, err := f.Dependencies.NewHTTPRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return 0, &BuildDownloadRequestError{Wrapped: err}
+		return 0, &BuildDownloadRequestError{WrapperError: errors.WrapperError{Wrapped: err}}
 	}
 	for headerName, headerValues := range headers {
 		for _, headerValue := range headerValues {
@@ -22,7 +24,7 @@ func (f *FileDownloader) DownloadFile(relativePath, url string, headers http.Hea
 	// do request
 	resp, err := f.Dependencies.DoRequest(req)
 	if err != nil {
-		return 0, &DoDownloadRequestError{Wrapped: err}
+		return 0, &DoDownloadRequestError{WrapperError: errors.WrapperError{Wrapped: err}}
 	}
 	defer resp.Body.Close()
 
@@ -34,7 +36,7 @@ func (f *FileDownloader) DownloadFile(relativePath, url string, headers http.Hea
 	// create file
 	out, err := f.Dependencies.CreateFile(relativePath)
 	if err != nil {
-		return 0, &CreateFileError{Wrapped: err}
+		return 0, &CreateFileError{WrapperError: errors.WrapperError{Wrapped: err}}
 	}
 	defer out.Close()
 

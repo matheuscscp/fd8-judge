@@ -36,46 +36,46 @@ func (m *MockFileDownloaderDependencies) EXPECT() *MockFileDownloaderDependencie
 }
 
 // NewHTTPRequest mocks base method
-func (m *MockFileDownloaderDependencies) NewHTTPRequest(arg0, arg1 string, arg2 io.Reader) (*http.Request, error) {
+func (m *MockFileDownloaderDependencies) NewHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewHTTPRequest", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "NewHTTPRequest", method, url, body)
 	ret0, _ := ret[0].(*http.Request)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewHTTPRequest indicates an expected call of NewHTTPRequest
-func (mr *MockFileDownloaderDependenciesMockRecorder) NewHTTPRequest(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockFileDownloaderDependenciesMockRecorder) NewHTTPRequest(method, url, body interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewHTTPRequest", reflect.TypeOf((*MockFileDownloaderDependencies)(nil).NewHTTPRequest), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewHTTPRequest", reflect.TypeOf((*MockFileDownloaderDependencies)(nil).NewHTTPRequest), method, url, body)
 }
 
 // DoRequest mocks base method
-func (m *MockFileDownloaderDependencies) DoRequest(arg0 *http.Request) (*http.Response, error) {
+func (m *MockFileDownloaderDependencies) DoRequest(req *http.Request) (*http.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoRequest", arg0)
+	ret := m.ctrl.Call(m, "DoRequest", req)
 	ret0, _ := ret[0].(*http.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DoRequest indicates an expected call of DoRequest
-func (mr *MockFileDownloaderDependenciesMockRecorder) DoRequest(arg0 interface{}) *gomock.Call {
+func (mr *MockFileDownloaderDependenciesMockRecorder) DoRequest(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoRequest", reflect.TypeOf((*MockFileDownloaderDependencies)(nil).DoRequest), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoRequest", reflect.TypeOf((*MockFileDownloaderDependencies)(nil).DoRequest), req)
 }
 
 // CreateFile mocks base method
-func (m *MockFileDownloaderDependencies) CreateFile(arg0 string) (*os.File, error) {
+func (m *MockFileDownloaderDependencies) CreateFile(relativePath string) (*os.File, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateFile", arg0)
+	ret := m.ctrl.Call(m, "CreateFile", relativePath)
 	ret0, _ := ret[0].(*os.File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateFile indicates an expected call of CreateFile
-func (mr *MockFileDownloaderDependenciesMockRecorder) CreateFile(arg0 interface{}) *gomock.Call {
+func (mr *MockFileDownloaderDependenciesMockRecorder) CreateFile(relativePath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFile", reflect.TypeOf((*MockFileDownloaderDependencies)(nil).CreateFile), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFile", reflect.TypeOf((*MockFileDownloaderDependencies)(nil).CreateFile), relativePath)
 }

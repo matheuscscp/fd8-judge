@@ -12,57 +12,41 @@ import (
 
 	"github.com/matheuscscp/fd8-judge/judge/downloading"
 	"github.com/matheuscscp/fd8-judge/testing/factory"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDownloadFile(t *testing.T) {
 	// create server
 	f := factory.NewHTTPServerFactory()
 	listener, server, err := f.NewDummy()
-	if err != nil {
-		t.Fatalf("error creating HTTP server: %v", err)
-	}
+	assert.Equal(t, nil, err)
 	port := listener.Addr().(*net.TCPAddr).Port
 
 	// download bytes
-	const relativePath = "./TestDownloadFile.tmp"
-	const payload = "PAYLOAD"
-	const bytesToBeDownloaded = int64(len(payload))
+	const (
+		relativePath        = "./TestDownloadFile.tmp"
+		payload             = "PAYLOAD"
+		bytesToBeDownloaded = int64(len(payload))
+	)
 	downloader := downloading.DefaultDownloader()
 	bytesDownloaded, err := downloader.DownloadFile(
 		relativePath,
 		fmt.Sprintf("http://localhost:%d/dummy", port),
 		nil,
 	)
-	if err != nil {
-		t.Fatalf("error downloading file: %v", err)
-	}
-	if bytesDownloaded != bytesToBeDownloaded {
-		t.Fatalf(
-			"wrong number of bytes downloaded, want %d, got %d",
-			bytesToBeDownloaded,
-			bytesDownloaded,
-		)
-	}
+	assert.Equal(t, nil, err)
+	assert.Equal(t, bytesToBeDownloaded, bytesDownloaded)
 
-	// check file content
-	fileContentBytes, err := ioutil.ReadFile(relativePath)
-	if err != nil {
-		t.Fatalf("error reading downloaded file: %v", err)
-	}
-	fileContent := string(fileContentBytes)
-	if fileContent != payload {
-		t.Fatalf("wrong downloaded file, want '%s', got '%s'", payload, fileContent)
-	}
+	// check downloaded content
+	downloadedContentBytes, err := ioutil.ReadFile(relativePath)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, []byte(payload), downloadedContentBytes)
 
 	// erase file
 	err = os.Remove(relativePath)
-	if err != nil {
-		t.Fatalf("error removing downloaded file: %v", err)
-	}
+	assert.Equal(t, nil, err)
 
 	// shutdown test server
 	err = server.Shutdown(context.Background())
-	if err != nil {
-		t.Fatalf("error shutting down test server: %v", err)
-	}
+	assert.Equal(t, nil, err)
 }

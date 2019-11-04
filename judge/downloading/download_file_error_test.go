@@ -3,14 +3,15 @@
 package downloading_test
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/matheuscscp/fd8-judge/errors"
 	"github.com/matheuscscp/fd8-judge/judge/downloading"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,8 +29,7 @@ func TestDownloadFileError(t *testing.T) {
 			err   error
 		}
 		testOutputProps struct {
-			errStr    string
-			errUnwrap error
+			errStr string
 		}
 	)
 	var tests = map[string]struct {
@@ -40,11 +40,10 @@ func TestDownloadFileError(t *testing.T) {
 	}{
 		"build-download-request-error": {
 			output: testOutput{
-				err: &downloading.BuildDownloadRequestError{Wrapped: fmt.Errorf("error")},
+				err: &downloading.BuildDownloadRequestError{WrapperError: errors.WrapperError{Wrapped: fmt.Errorf("error")}},
 			},
 			outProps: testOutputProps{
-				errStr:    "failed to build download request: error",
-				errUnwrap: fmt.Errorf("error"),
+				errStr: "error building download request: error",
 			},
 			mocks: func() {
 				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
@@ -52,11 +51,10 @@ func TestDownloadFileError(t *testing.T) {
 		},
 		"do-download-request-error": {
 			output: testOutput{
-				err: &downloading.DoDownloadRequestError{Wrapped: fmt.Errorf("error")},
+				err: &downloading.DoDownloadRequestError{WrapperError: errors.WrapperError{Wrapped: fmt.Errorf("error")}},
 			},
 			outProps: testOutputProps{
-				errStr:    "failed to do download request: error",
-				errUnwrap: fmt.Errorf("error"),
+				errStr: "error performing download request: error",
 			},
 			mocks: func() {
 				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -68,7 +66,7 @@ func TestDownloadFileError(t *testing.T) {
 				err: &downloading.UnexpectedStatusInDownloadResponseError{Status: "status"},
 			},
 			outProps: testOutputProps{
-				errStr: "received unexpected status in download response: status",
+				errStr: "unexpected status in download response: status",
 			},
 			mocks: func() {
 				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -81,11 +79,10 @@ func TestDownloadFileError(t *testing.T) {
 		},
 		"create-file-error": {
 			output: testOutput{
-				err: &downloading.CreateFileError{Wrapped: fmt.Errorf("error")},
+				err: &downloading.CreateFileError{WrapperError: errors.WrapperError{Wrapped: fmt.Errorf("error")}},
 			},
 			outProps: testOutputProps{
-				errStr:    "failed to create file to store downloaded data: error",
-				errUnwrap: fmt.Errorf("error"),
+				errStr: "error creating file for downloaded data: error",
 			},
 			mocks: func() {
 				mockDependencies.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -111,11 +108,9 @@ func TestDownloadFileError(t *testing.T) {
 			if err != nil {
 				errStr = err.Error()
 			}
-			errUnwrap := errors.Unwrap(err)
 			assert.Equal(t, test.output.bytes, bytes)
 			assert.Equal(t, test.output.err, err)
 			assert.Equal(t, test.outProps.errStr, errStr)
-			assert.Equal(t, test.outProps.errUnwrap, errUnwrap)
 		})
 	}
 }

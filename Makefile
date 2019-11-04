@@ -3,8 +3,11 @@ INTERFACES := $(shell find . -name '*interface.go')
 MOCKS := $(patsubst %.go,%.go,$(INTERFACES:interface.go=mock.go))
 
 setup:
-	@cd ~; go get github.com/golangci/golangci-lint/cmd/golangci-lint
-	@cd ~; go get github.com/golang/mock/mockgen
+	@if ! which golangci-lint > /dev/null; then \
+		curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+		sh -s -- -b $$(go env GOPATH)/bin v1.21.0 \
+		exit 1; \
+	fi
 
 build:
 	@go build -o fd8-judge
@@ -36,6 +39,6 @@ test-integration:
 mocks: ${MOCKS}
 
 %mock.go: %interface.go
-	@mockgen -source $< -package $$(basename $$(dirname "$<")) -destination $@
+	@go run github.com/golang/mock/mockgen -source $< -package $$(basename $$(dirname "$<")) -destination $@
 
 .PHONY: setup build clean lint check-golangci-lint test test-unit test-integration mocks
