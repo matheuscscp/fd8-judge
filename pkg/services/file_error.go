@@ -62,7 +62,7 @@ type (
 		Wrapped error
 	}
 
-	// UnexpectedStatusInFileUploadResponseError is a mnemonic error type that wraps an unknown error.
+	// UnexpectedStatusInFileUploadResponseError is a mnemonic error type.
 	UnexpectedStatusInFileUploadResponseError struct {
 		// Status is the status string of the errored response.
 		Status string
@@ -96,6 +96,42 @@ type (
 
 	// WriteInputFileForCompressionError is a mnemonic error type that wraps an unknown error.
 	WriteInputFileForCompressionError struct {
+		Wrapped error
+	}
+
+	// OpenCompressedFileError is a mnemonic error type that wraps an unknown error.
+	OpenCompressedFileError struct {
+		Wrapped error
+	}
+
+	// CreateCompressionReaderError is a mnemonic error type that wraps an unknown error.
+	CreateCompressionReaderError struct {
+		Wrapped error
+	}
+
+	// ReadCompressionHeaderError is a mnemonic error type that wraps an unknown error.
+	ReadCompressionHeaderError struct {
+		Wrapped error
+	}
+
+	// InvalidCompressionHeaderNameError is a mnemonic error type.
+	InvalidCompressionHeaderNameError struct {
+		// Name is the invalid name.
+		Name string
+	}
+
+	// CreateFolderForUncompressionError is a mnemonic error type that wraps an unknown error.
+	CreateFolderForUncompressionError struct {
+		Wrapped error
+	}
+
+	// CreateFileForUncompressionError is a mnemonic error type that wraps an unknown error.
+	CreateFileForUncompressionError struct {
+		Wrapped error
+	}
+
+	// WriteOutputFileForUncompressionError is a mnemonic error type that wraps an unknown error.
+	WriteOutputFileForUncompressionError struct {
 		Wrapped error
 	}
 )
@@ -262,5 +298,70 @@ func (e *WriteInputFileForCompressionError) Error() string {
 
 // Unwrap returns the wrapped error.
 func (e *WriteInputFileForCompressionError) Unwrap() error {
+	return e.Wrapped
+}
+
+// Error returns a string representation of the error.
+func (e *OpenCompressedFileError) Error() string {
+	return fmt.Sprintf("error opening compressed file: %s", e.Wrapped.Error())
+}
+
+// Unwrap returns the wrapped error.
+func (e *OpenCompressedFileError) Unwrap() error {
+	return e.Wrapped
+}
+
+// Error returns a string representation of the error.
+func (e *CreateCompressionReaderError) Error() string {
+	return fmt.Sprintf("error creating compression reader: %s", e.Wrapped.Error())
+}
+
+// Unwrap returns the wrapped error.
+func (e *CreateCompressionReaderError) Unwrap() error {
+	return e.Wrapped
+}
+
+// Error returns a string representation of the error.
+func (e *ReadCompressionHeaderError) Error() string {
+	return fmt.Sprintf("error reading compression header: %s", e.Wrapped.Error())
+}
+
+// Unwrap returns the wrapped error.
+func (e *ReadCompressionHeaderError) Unwrap() error {
+	return e.Wrapped
+}
+
+// Error returns a string representation of the error.
+func (e *InvalidCompressionHeaderNameError) Error() string {
+	return fmt.Sprintf("invalid compression header name, want relative path, got: %q", e.Name)
+}
+
+// Error returns a string representation of the error.
+func (e *CreateFolderForUncompressionError) Error() string {
+	return fmt.Sprintf("error creating folder for uncompression: %s", e.Wrapped.Error())
+}
+
+// Unwrap returns the wrapped error.
+func (e *CreateFolderForUncompressionError) Unwrap() error {
+	return e.Wrapped
+}
+
+// Error returns a string representation of the error.
+func (e *CreateFileForUncompressionError) Error() string {
+	return fmt.Sprintf("error creating file for uncompression: %s", e.Wrapped.Error())
+}
+
+// Unwrap returns the wrapped error.
+func (e *CreateFileForUncompressionError) Unwrap() error {
+	return e.Wrapped
+}
+
+// Error returns a string representation of the error.
+func (e *WriteOutputFileForUncompressionError) Error() string {
+	return fmt.Sprintf("error writing output file for uncompression: %s", e.Wrapped.Error())
+}
+
+// Unwrap returns the wrapped error.
+func (e *WriteOutputFileForUncompressionError) Unwrap() error {
 	return e.Wrapped
 }

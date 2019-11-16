@@ -13,6 +13,7 @@ import (
 
 	"github.com/matheuscscp/fd8-judge/pkg/services"
 	"github.com/matheuscscp/fd8-judge/testing/factory"
+	"github.com/matheuscscp/fd8-judge/testing/fixtures"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -122,4 +123,79 @@ func TestUploadFile(t *testing.T) {
 	// shutdown test server
 	err = server.Shutdown(context.Background())
 	assert.Equal(t, nil, err)
+}
+
+func TestCompressAndUncompress(t *testing.T) {
+	// cannot run these tests in parallel because they mess with the file system
+
+	fileSvc := services.NewFileService(nil)
+
+	var tests = map[string]struct {
+		fixture                  factory.FileTreeNode
+		expectedFileTree         factory.FileTreeNode
+		inputRelativePath        string
+		uncompressedRelativePath string
+	}{
+		"single-file": {
+			fixture:                  fixtures.SingleFile(),
+			expectedFileTree:         fixtures.SingleFile(),
+			inputRelativePath:        "./SingleFile.txt",
+			uncompressedRelativePath: "./SingleFile.txt",
+		},
+		"empty-folder": {
+			fixture:                  fixtures.EmptyFolder(),
+			expectedFileTree:         fixtures.EmptyFolder(),
+			inputRelativePath:        "./EmptyFolder",
+			uncompressedRelativePath: "./EmptyFolder",
+		},
+		"big-folder": {
+			fixture:                  fixtures.TestFolder(),
+			expectedFileTree:         fixtures.TestFolder(),
+			inputRelativePath:        "./TestFolder",
+			uncompressedRelativePath: "./TestFolder",
+		},
+		"cut-path-before-single-file": {
+			fixture:                  fixtures.TestFolderOneFile(),
+			expectedFileTree:         fixtures.SingleFile(),
+			inputRelativePath:        "./TestFolderOneFile/SingleFile.txt",
+			uncompressedRelativePath: "./SingleFile.txt",
+		},
+		"cut-path-before-empty-folder": {
+			fixture:                  fixtures.TestFolderOneFolder(),
+			expectedFileTree:         fixtures.EmptyFolder(),
+			inputRelativePath:        "./TestFolderOneFolder/EmptyFolder",
+			uncompressedRelativePath: "./EmptyFolder",
+		},
+		"cut-long-path-before-big-folder": {
+			fixture:                  fixtures.TestDummyRootFolder(),
+			expectedFileTree:         fixtures.TestFolder(),
+			inputRelativePath:        "./TestDummyRootFolder//MiddleFolder/TestFolder",
+			uncompressedRelativePath: "./TestFolder",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := test.fixture.Write(".")
+			assert.Equal(t, nil, err)
+
+			err = fileSvc.Compress(test.inputRelativePath, "./TestCompressedFile.tar.gz")
+			assert.Equal(t, nil, err)
+
+			err = test.fixture.Remove(".")
+			assert.Equal(t, nil, err)
+
+			err = fileSvc.Uncompress("./TestCompressedFile.tar.gz", ".")
+			assert.Equal(t, nil, err)
+
+			err = os.Remove("./TestCompressedFile.tar.gz")
+			assert.Equal(t, nil, err)
+
+			fileTree, err := factory.ReadFileTree(test.uncompressedRelativePath, true)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, test.expectedFileTree, fileTree)
+
+			err = fileTree.Remove(".")
+			assert.Equal(t, nil, err)
+		})
+	}
 }

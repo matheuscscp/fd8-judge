@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type (
@@ -38,6 +39,9 @@ type (
 
 		// Compress compresses a file or a folder into a .tar.gz file.
 		Compress(inputRelativePath, outputRelativePath string) error
+
+		// Uncompress uncompresses a .tar.gz file to file or a folder.
+		Uncompress(inputRelativePath, outputRelativePath string) error
 	}
 
 	// FileServiceRuntime is the contract to supply for the default implementation of FileService.
@@ -48,7 +52,7 @@ type (
 		// DoRequest executes an *http.Request.
 		DoRequest(req *http.Request) (*http.Response, error)
 
-		// CreateFile creates a file in the given relativePath.
+		// CreateFile creates a file in the given relative path.
 		CreateFile(relativePath string) (io.WriteCloser, error)
 
 		// Copy reads from src and writes to dst and returns the number of bytes written.
@@ -60,11 +64,11 @@ type (
 		// DecodeUploadInfo reads a JSON representation of UploadInfo from a reader.
 		DecodeUploadInfo(body io.Reader) (*FileUploadInfo, error)
 
-		// OpenFile opens the file stored in relativePath and returns an io.ReadCloser.
+		// OpenFile opens the file stored in relative path and returns an io.ReadCloser.
 		OpenFile(relativePath string) (io.ReadCloser, error)
 
-		// RemoveFile removes a file in the given relativePath.
-		RemoveFile(relativePath string) error
+		// RemoveFileTree removes a file tree in the given relative path.
+		RemoveFileTree(relativePath string) error
 
 		// WalkRelativePath walks through a subtree of the file system calling a callback.
 		WalkRelativePath(relativePath string, walkFunc filepath.WalkFunc) error
@@ -74,6 +78,15 @@ type (
 
 		// WriteCompressionHeader writes a tar compression header to the output.
 		WriteCompressionHeader(out *tar.Writer, header *tar.Header) error
+
+		// CreateCompressionReader creates a compression reader from an input reader.
+		CreateCompressionReader(in io.Reader) (io.ReadCloser, error)
+
+		// ReadCompressionHeader reads a tar compression header from the input.
+		ReadCompressionHeader(in *tar.Reader) (*tar.Header, error)
+
+		// CreateFolder creates a folder in the given relative path.
+		CreateFolder(relativePath string) error
 	}
 
 	// defaultFileService uses an interface to implement the DownloadFile() function.
@@ -197,6 +210,7 @@ func (f *defaultFileService) UploadFile(relativePath string, uploadInfo *FileUpl
 // Compress compresses a file or a folder into a .tar.gz file.
 func (f *defaultFileService) Compress(inputRelativePath, outputRelativePath string) error {
 	// open file < gzip < tar output writers
+	outputRelativePath = filepath.Clean(outputRelativePath)
 	outFile, err := f.runtime.CreateFile(outputRelativePath)
 	if err != nil {
 		return &CreateFileForCompressionError{Wrapped: err}
@@ -210,13 +224,15 @@ func (f *defaultFileService) Compress(inputRelativePath, outputRelativePath stri
 	}
 	removeOut := func() { // should be called right before error early returns
 		closeOut()
-		_ = f.runtime.RemoveFile(outputRelativePath)
+		_ = f.runtime.RemoveFileTree(outputRelativePath)
 	}
 
 	// walk file tree
 	inputRelativePath = filepath.Clean(inputRelativePath)
+	rootName := filepath.Base(inputRelativePath)
 	err = f.runtime.WalkRelativePath(inputRelativePath, func(curPath string, info os.FileInfo, err error) error {
-		return f.VisitNodeForCompression(outTar, inputRelativePath, curPath, info, err)
+		tarRelativePath := filepath.Clean(strings.TrimPrefix(curPath, inputRelativePath))
+		return f.VisitNodeForCompression(outTar, filepath.Join(rootName, tarRelativePath), curPath, info, err)
 	})
 	if err != nil {
 		removeOut()
@@ -238,18 +254,14 @@ func (f *defaultFileService) VisitNodeForCompression(
 	if err != nil {
 		return &WalkTreeForCompressionError{Wrapped: err}
 	}
-	curPath = filepath.Clean(curPath)
 
 	header, err := f.runtime.CreateCompressionHeader(info, curPath)
 	if err != nil {
 		return &CreateCompressionHeaderError{Wrapped: err}
 	}
 
-	// if inputRelativePath points to a folder, we replace header.Name by slashed curPath
-	// (see https://golang.org/src/archive/tar/common.go?#L626)
-	if curPath != inputRelativePath || info.IsDir() {
-		header.Name = filepath.ToSlash(curPath)
-	}
+	// Name within tar must have relative path information
+	header.Name = inputRelativePath
 
 	if err := f.runtime.WriteCompressionHeader(outTar, header); err != nil {
 		return &WriteCompressionHeaderError{Wrapped: err}
@@ -268,6 +280,73 @@ func (f *defaultFileService) VisitNodeForCompression(
 		}
 	}
 
+	return nil
+}
+
+// Uncompress uncompresses a .tar.gz file to file or a folder.
+func (f *defaultFileService) Uncompress(inputRelativePath, outputRelativePath string) error {
+	// open file > gzip > tar input readers
+	inputRelativePath = filepath.Clean(inputRelativePath)
+	inFile, err := f.runtime.OpenFile(inputRelativePath)
+	if err != nil {
+		return &OpenCompressedFileError{Wrapped: err}
+	}
+	inGzip, err := f.runtime.CreateCompressionReader(inFile)
+	if err != nil {
+		inFile.Close()
+		return &CreateCompressionReaderError{Wrapped: err}
+	}
+	inTar := tar.NewReader(inGzip)
+	closeIn := func() {
+		inGzip.Close()
+		inFile.Close()
+	}
+	outputRelativePath = filepath.Clean(outputRelativePath)
+	removeOut := func() { // should be called right before error early returns
+		closeIn()
+		_ = f.runtime.RemoveFileTree(outputRelativePath)
+	}
+
+	// walk file tree
+	for {
+		header, err := f.runtime.ReadCompressionHeader(inTar)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			removeOut()
+			return &ReadCompressionHeaderError{Wrapped: err}
+		}
+
+		// validate path
+		p := header.Name
+		if p == "" || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
+			removeOut()
+			return &InvalidCompressionHeaderNameError{Name: p}
+		}
+		curPath := filepath.Join(outputRelativePath, p)
+
+		switch header.Typeflag {
+		case tar.TypeDir: // folder
+			if err := f.runtime.CreateFolder(curPath); err != nil {
+				removeOut()
+				return &CreateFolderForUncompressionError{Wrapped: err}
+			}
+		case tar.TypeReg: // file
+			file, err := f.runtime.CreateFile(curPath)
+			if err != nil {
+				removeOut()
+				return &CreateFileForUncompressionError{Wrapped: err}
+			}
+			if _, err := f.runtime.Copy(file, inTar); err != nil {
+				file.Close()
+				removeOut()
+				return &WriteOutputFileForUncompressionError{Wrapped: err}
+			}
+			file.Close()
+		}
+	}
+
+	closeIn()
 	return nil
 }
 
@@ -309,14 +388,14 @@ func (*fileServiceDefaultRuntime) DecodeUploadInfo(reader io.Reader) (*FileUploa
 	return &uploadInfo, nil
 }
 
-// OpenFile opens the file stored in relativePath and returns an io.ReadCloser.
+// OpenFile opens the file stored in relative path and returns an io.ReadCloser.
 func (*fileServiceDefaultRuntime) OpenFile(relativePath string) (io.ReadCloser, error) {
 	return os.Open(relativePath)
 }
 
-// RemoveFile removes a file in the given relativePath.
-func (*fileServiceDefaultRuntime) RemoveFile(relativePath string) error {
-	return os.Remove(relativePath)
+// RemoveFile removes a file tree in the given relative path.
+func (*fileServiceDefaultRuntime) RemoveFileTree(relativePath string) error {
+	return os.RemoveAll(relativePath)
 }
 
 // WalkRelativePath walks through a subtree of the file system calling a callback.
@@ -332,4 +411,19 @@ func (*fileServiceDefaultRuntime) CreateCompressionHeader(info os.FileInfo, path
 // WriteCompressionHeader writes a tar compression header to the output.
 func (*fileServiceDefaultRuntime) WriteCompressionHeader(out *tar.Writer, header *tar.Header) error {
 	return out.WriteHeader(header)
+}
+
+// CreateCompressionReader creates a compression reader from an input reader.
+func (*fileServiceDefaultRuntime) CreateCompressionReader(in io.Reader) (io.ReadCloser, error) {
+	return gzip.NewReader(in)
+}
+
+// ReadCompressionHeader reads a tar compression header from the input.
+func (*fileServiceDefaultRuntime) ReadCompressionHeader(in *tar.Reader) (*tar.Header, error) {
+	return in.Next()
+}
+
+// CreateFolder creates a folder in the given relative path.
+func (*fileServiceDefaultRuntime) CreateFolder(relativePath string) error {
+	return os.Mkdir(relativePath, os.ModeDir|0755)
 }

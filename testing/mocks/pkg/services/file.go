@@ -96,6 +96,20 @@ func (mr *MockFileServiceMockRecorder) Compress(inputRelativePath, outputRelativ
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compress", reflect.TypeOf((*MockFileService)(nil).Compress), inputRelativePath, outputRelativePath)
 }
 
+// Uncompress mocks base method
+func (m *MockFileService) Uncompress(inputRelativePath, outputRelativePath string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Uncompress", inputRelativePath, outputRelativePath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Uncompress indicates an expected call of Uncompress
+func (mr *MockFileServiceMockRecorder) Uncompress(inputRelativePath, outputRelativePath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Uncompress", reflect.TypeOf((*MockFileService)(nil).Uncompress), inputRelativePath, outputRelativePath)
+}
+
 // MockFileServiceRuntime is a mock of FileServiceRuntime interface
 type MockFileServiceRuntime struct {
 	ctrl     *gomock.Controller
@@ -224,18 +238,18 @@ func (mr *MockFileServiceRuntimeMockRecorder) OpenFile(relativePath interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenFile", reflect.TypeOf((*MockFileServiceRuntime)(nil).OpenFile), relativePath)
 }
 
-// RemoveFile mocks base method
-func (m *MockFileServiceRuntime) RemoveFile(relativePath string) error {
+// RemoveFileTree mocks base method
+func (m *MockFileServiceRuntime) RemoveFileTree(relativePath string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveFile", relativePath)
+	ret := m.ctrl.Call(m, "RemoveFileTree", relativePath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RemoveFile indicates an expected call of RemoveFile
-func (mr *MockFileServiceRuntimeMockRecorder) RemoveFile(relativePath interface{}) *gomock.Call {
+// RemoveFileTree indicates an expected call of RemoveFileTree
+func (mr *MockFileServiceRuntimeMockRecorder) RemoveFileTree(relativePath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveFile", reflect.TypeOf((*MockFileServiceRuntime)(nil).RemoveFile), relativePath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveFileTree", reflect.TypeOf((*MockFileServiceRuntime)(nil).RemoveFileTree), relativePath)
 }
 
 // WalkRelativePath mocks base method
@@ -279,4 +293,48 @@ func (m *MockFileServiceRuntime) WriteCompressionHeader(out *tar.Writer, header 
 func (mr *MockFileServiceRuntimeMockRecorder) WriteCompressionHeader(out, header interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteCompressionHeader", reflect.TypeOf((*MockFileServiceRuntime)(nil).WriteCompressionHeader), out, header)
+}
+
+// CreateCompressionReader mocks base method
+func (m *MockFileServiceRuntime) CreateCompressionReader(in io.Reader) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCompressionReader", in)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCompressionReader indicates an expected call of CreateCompressionReader
+func (mr *MockFileServiceRuntimeMockRecorder) CreateCompressionReader(in interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCompressionReader", reflect.TypeOf((*MockFileServiceRuntime)(nil).CreateCompressionReader), in)
+}
+
+// ReadCompressionHeader mocks base method
+func (m *MockFileServiceRuntime) ReadCompressionHeader(in *tar.Reader) (*tar.Header, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadCompressionHeader", in)
+	ret0, _ := ret[0].(*tar.Header)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadCompressionHeader indicates an expected call of ReadCompressionHeader
+func (mr *MockFileServiceRuntimeMockRecorder) ReadCompressionHeader(in interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadCompressionHeader", reflect.TypeOf((*MockFileServiceRuntime)(nil).ReadCompressionHeader), in)
+}
+
+// CreateFolder mocks base method
+func (m *MockFileServiceRuntime) CreateFolder(relativePath string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateFolder", relativePath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateFolder indicates an expected call of CreateFolder
+func (mr *MockFileServiceRuntimeMockRecorder) CreateFolder(relativePath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFolder", reflect.TypeOf((*MockFileServiceRuntime)(nil).CreateFolder), relativePath)
 }

@@ -41,4 +41,8 @@ mocks: ${MOCKS}
 ./testing/mocks/%: ./%
 	@go run github.com/golang/mock/mockgen -source $< -package $$(basename $$(dirname "$<")) -destination $@
 
-.PHONY: setup build clean lint check-golangci-lint test test-unit test-integration mocks
+cover:
+	@go run github.com/wadey/gocovmerge unit.coverage.out integration.coverage.out > full.coverage.out
+	@go tool cover -func=full.coverage.out | grep total | awk '{print $$3}'
+
+.PHONY: setup build clean lint check-golangci-lint test test-unit test-integration mocks cover
