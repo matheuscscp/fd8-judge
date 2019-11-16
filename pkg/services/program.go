@@ -15,6 +15,12 @@ type (
 
 		// GetExecutionCommand returns an *exec.Cmd to execute the given program.
 		GetExecutionCommand(ctx context.Context, sourceRelativePath, binaryRelativePath string) *exec.Cmd
+
+		// GetSourceFileExtension returns the extension for source code files names.
+		GetSourceFileExtension() string
+
+		// GetBinaryFileExtension returns the extension for binary executable file names.
+		GetBinaryFileExtension() string
 	}
 
 	// ProgramServiceRuntime is the contract to supply for the implementations of ProgramService.
@@ -23,7 +29,7 @@ type (
 		RunCommand(cmd *exec.Cmd) error
 	}
 
-	// programServiceDefaultRuntime is the default runtime implementation for ProgramService.
+	// programServiceDefaultRuntime is the default runtime implementation for ProgramServiceRuntime.
 	programServiceDefaultRuntime struct {
 	}
 
@@ -39,22 +45,33 @@ func NewProgramService(programServiceKey string, runtime ProgramServiceRuntime) 
 	if runtime == nil {
 		runtime = &programServiceDefaultRuntime{}
 	}
-	programServices := map[string]ProgramService{
-		"c++11": &cpp11ProgramService{runtime: runtime},
-	}
+	programServices := getProgramServices(runtime)
 	svc, ok := programServices[programServiceKey]
 	if !ok {
-		allowedSvcs := make([]string, 0, len(programServices))
-		for key := range programServices {
-			allowedSvcs = append(allowedSvcs, fmt.Sprintf("'%s'", key))
-		}
 		return nil, fmt.Errorf(
 			"invalid program service, want one in {%s}, got '%s'",
-			strings.Join(allowedSvcs, ", "),
+			strings.Join(GetProgramServices(), ", "),
 			programServiceKey,
 		)
 	}
 	return svc, nil
+}
+
+// GetProgramServices returns a string list of the available program services.
+func GetProgramServices() []string {
+	programServices := getProgramServices(nil)
+	strings := make([]string, 0, len(programServices))
+	for key := range programServices {
+		strings = append(strings, "'"+key+"'")
+	}
+	return strings
+}
+
+// getProgramServices returns the available program services.
+func getProgramServices(runtime ProgramServiceRuntime) map[string]ProgramService {
+	return map[string]ProgramService{
+		"c++11": &cpp11ProgramService{runtime: runtime},
+	}
 }
 
 // RunCommand runs a command.
@@ -74,4 +91,14 @@ func (p *cpp11ProgramService) Compile(ctx context.Context, sourceRelativePath, b
 // GetExecutionCommand returns an *exec.Cmd to execute the given program.
 func (*cpp11ProgramService) GetExecutionCommand(ctx context.Context, sourceRelativePath, binaryRelativePath string) *exec.Cmd {
 	return exec.CommandContext(ctx, binaryRelativePath)
+}
+
+// GetSourceFileExtension returns the extension for source code files names.
+func (*cpp11ProgramService) GetSourceFileExtension() string {
+	return ".cpp"
+}
+
+// GetBinaryFileExtension returns the extension for binary executable file names.
+func (*cpp11ProgramService) GetBinaryFileExtension() string {
+	return ""
 }

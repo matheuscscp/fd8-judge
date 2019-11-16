@@ -62,6 +62,34 @@ func (mr *MockProgramServiceMockRecorder) GetExecutionCommand(ctx, sourceRelativ
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExecutionCommand", reflect.TypeOf((*MockProgramService)(nil).GetExecutionCommand), ctx, sourceRelativePath, binaryRelativePath)
 }
 
+// GetSourceFileExtension mocks base method
+func (m *MockProgramService) GetSourceFileExtension() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSourceFileExtension")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSourceFileExtension indicates an expected call of GetSourceFileExtension
+func (mr *MockProgramServiceMockRecorder) GetSourceFileExtension() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceFileExtension", reflect.TypeOf((*MockProgramService)(nil).GetSourceFileExtension))
+}
+
+// GetBinaryFileExtension mocks base method
+func (m *MockProgramService) GetBinaryFileExtension() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBinaryFileExtension")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetBinaryFileExtension indicates an expected call of GetBinaryFileExtension
+func (mr *MockProgramServiceMockRecorder) GetBinaryFileExtension() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBinaryFileExtension", reflect.TypeOf((*MockProgramService)(nil).GetBinaryFileExtension))
+}
+
 // MockProgramServiceRuntime is a mock of ProgramServiceRuntime interface
 type MockProgramServiceRuntime struct {
 	ctrl     *gomock.Controller

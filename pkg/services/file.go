@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -42,6 +44,21 @@ type (
 
 		// Uncompress uncompresses a .tar.gz file to file or a folder.
 		Uncompress(inputRelativePath, outputRelativePath string) error
+
+		// RemoveFileTree removes a file tree in the given relative path.
+		RemoveFileTree(relativePath string) error
+
+		// OpenFile opens the file stored in relative path and returns an io.ReadCloser.
+		OpenFile(relativePath string) (io.ReadCloser, error)
+
+		// CreateFile creates a file in the given relative path.
+		CreateFile(relativePath string) (io.WriteCloser, error)
+
+		// ListFiles returns a list of files (folders are discarded) contained in the given path.
+		ListFiles(relativePath string) ([]string, error)
+
+		// GetFileSize returns the size of the given file.
+		GetFileSize(relativePath string) (int, error)
 	}
 
 	// FileServiceRuntime is the contract to supply for the default implementation of FileService.
@@ -57,9 +74,6 @@ type (
 
 		// Copy reads from src and writes to dst and returns the number of bytes written.
 		Copy(dst io.Writer, src io.Reader) (int64, error)
-
-		// DoGetRequest executes an HTTP GET request.
-		DoGetRequest(url string) (*http.Response, error)
 
 		// DecodeUploadInfo reads a JSON representation of UploadInfo from a reader.
 		DecodeUploadInfo(body io.Reader) (*FileUploadInfo, error)
@@ -87,6 +101,12 @@ type (
 
 		// CreateFolder creates a folder in the given relative path.
 		CreateFolder(relativePath string) error
+
+		// ReadFolder returns a list of files and folders in the given path.
+		ReadFolder(relativePath string) ([]os.FileInfo, error)
+
+		// GetFileInfo returns the informations of the given file.
+		GetFileInfo(relativePath string) (os.FileInfo, error)
 	}
 
 	// defaultFileService is the default implementation for FileService.
@@ -151,8 +171,14 @@ func (f *defaultFileService) DownloadFile(relativePath, url string, headers http
 
 // RequestUploadInfo requests UploadInfo data to an authorized endpoint.
 func (f *defaultFileService) RequestUploadInfo(authorizedServerURL string, fileSize int) (*FileUploadInfo, error) {
+	req, err := f.runtime.NewHTTPRequest(http.MethodGet, authorizedServerURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating upload info request: %w", err)
+	}
+	req.Header.Add("X-Content-Length", fmt.Sprintf("%d", fileSize))
+
 	// do request
-	resp, err := f.runtime.DoGetRequest(fmt.Sprintf("%s?fileSize=%d", authorizedServerURL, fileSize))
+	resp, err := f.runtime.DoRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("error requesting upload info: %w", err)
 	}
@@ -268,7 +294,7 @@ func (f *defaultFileService) VisitNodeForCompression(
 	}
 
 	// write file
-	if isFile := !info.IsDir(); isFile {
+	if info.Mode().IsRegular() {
 		file, err := f.runtime.OpenFile(curPath)
 		if err != nil {
 			return fmt.Errorf("error opening input file for compression: %w", err)
@@ -305,6 +331,13 @@ func (f *defaultFileService) Uncompress(inputRelativePath, outputRelativePath st
 	removeOut := func() { // should be called right before error early returns
 		closeIn()
 		_ = f.runtime.RemoveFileTree(outputRelativePath)
+	}
+
+	// create root path if necessary
+	if outputRelativePath != "." {
+		if err := f.runtime.CreateFolder(outputRelativePath); err != nil {
+			return fmt.Errorf("error creating root path for uncompression: %w", err)
+		}
 	}
 
 	// walk file tree
@@ -350,6 +383,70 @@ func (f *defaultFileService) Uncompress(inputRelativePath, outputRelativePath st
 	return nil
 }
 
+// RemoveFileTree removes a file tree in the given relative path.
+func (f *defaultFileService) RemoveFileTree(relativePath string) error {
+	if err := f.runtime.RemoveFileTree(filepath.Clean(relativePath)); err != nil {
+		return fmt.Errorf("error removing file tree: %w", err)
+	}
+	return nil
+}
+
+// OpenFile opens the file stored in relative path and returns an io.ReadCloser.
+func (f *defaultFileService) OpenFile(relativePath string) (io.ReadCloser, error) {
+	file, err := f.runtime.OpenFile(filepath.Clean(relativePath))
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %w", err)
+	}
+	return file, nil
+}
+
+// CreateFile creates a file in the given relative path.
+func (f *defaultFileService) CreateFile(relativePath string) (io.WriteCloser, error) {
+	relativePath = filepath.Clean(relativePath)
+	folderPath := filepath.Dir(relativePath)
+	if folderPath != "" && folderPath != "." {
+		if err := f.runtime.CreateFolder(folderPath); err != nil {
+			return nil, fmt.Errorf("error creating folder for file: %w", err)
+		}
+	}
+	file, err := f.runtime.CreateFile(relativePath)
+	if err != nil {
+		return nil, fmt.Errorf("error creating file: %w", err)
+	}
+	return file, nil
+}
+
+// ListFiles returns a list of files (folders are discarded) contained in the given path.
+func (f *defaultFileService) ListFiles(relativePath string) ([]string, error) {
+	relativePath = filepath.Clean(relativePath)
+	infos, err := f.runtime.ReadFolder(relativePath)
+	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			return nil, &NoSuchFolderError{Path: relativePath}
+		}
+		return nil, fmt.Errorf("error reading folder to list files: %w", err)
+	}
+	var files []string
+	for _, info := range infos {
+		if info.Mode().IsRegular() {
+			files = append(files, info.Name())
+		}
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i] < files[j]
+	})
+	return files, nil
+}
+
+// GetFileSize returns the size of the given file.
+func (f *defaultFileService) GetFileSize(relativePath string) (int, error) {
+	info, err := f.runtime.GetFileInfo(filepath.Clean(relativePath))
+	if err != nil {
+		return 0, fmt.Errorf("error getting file infos to get size: %w", err)
+	}
+	return int(info.Size()), nil
+}
+
 // NewHTTPRequest calls and returns http.NewRequest().
 func (*fileServiceDefaultRuntime) NewHTTPRequest(
 	method, url string,
@@ -373,11 +470,6 @@ func (*fileServiceDefaultRuntime) Copy(dst io.Writer, src io.Reader) (int64, err
 	return io.Copy(dst, src)
 }
 
-// DoGetRequest calls and returns http.Get().
-func (*fileServiceDefaultRuntime) DoGetRequest(url string) (*http.Response, error) {
-	return http.Get(url)
-}
-
 // DecodeUploadInfo wraps around json.NewDecoder().Decode().
 func (*fileServiceDefaultRuntime) DecodeUploadInfo(reader io.Reader) (*FileUploadInfo, error) {
 	var uploadInfo FileUploadInfo
@@ -393,7 +485,7 @@ func (*fileServiceDefaultRuntime) OpenFile(relativePath string) (io.ReadCloser, 
 	return os.Open(relativePath)
 }
 
-// RemoveFile removes a file tree in the given relative path.
+// RemoveFileTree removes a file tree in the given relative path.
 func (*fileServiceDefaultRuntime) RemoveFileTree(relativePath string) error {
 	return os.RemoveAll(relativePath)
 }
@@ -425,5 +517,15 @@ func (*fileServiceDefaultRuntime) ReadCompressionHeader(in *tar.Reader) (*tar.He
 
 // CreateFolder creates a folder in the given relative path.
 func (*fileServiceDefaultRuntime) CreateFolder(relativePath string) error {
-	return os.Mkdir(relativePath, os.ModeDir|0755)
+	return os.MkdirAll(relativePath, os.ModeDir|0755)
+}
+
+// ReadFolder returns a list of files and folders in the given path.
+func (*fileServiceDefaultRuntime) ReadFolder(relativePath string) ([]os.FileInfo, error) {
+	return ioutil.ReadDir(relativePath)
+}
+
+// GetFileInfo returns the informations of the given file.
+func (*fileServiceDefaultRuntime) GetFileInfo(relativePath string) (os.FileInfo, error) {
+	return os.Stat(relativePath)
 }

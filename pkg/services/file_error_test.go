@@ -5,6 +5,7 @@ package services_test
 import (
 	"archive/tar"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -138,20 +139,42 @@ func TestRequestUploadInfoError(t *testing.T) {
 		output testOutput
 		mocks  func()
 	}{
+		"create-upload-info-request-error": {
+			output: testOutput{
+				err: fmt.Errorf("error creating upload info request: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
+			},
+		},
 		"request-upload-info-error": {
 			output: testOutput{
 				err: fmt.Errorf("error requesting upload info: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(&http.Request{
+					Header: make(http.Header),
+				}, nil)
+				mockRuntime.EXPECT().DoRequest(&http.Request{
+					Header: http.Header{
+						"X-Content-Length": []string{"0"},
+					},
+				}).Return(nil, fmt.Errorf("error"))
 			},
 		},
-		"unexpected-status-in-download-response-error": {
+		"unexpected-status-in-upload-response-error": {
 			output: testOutput{
 				err: fmt.Errorf("unexpected status in upload info response: status"),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(&http.Response{
+				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(&http.Request{
+					Header: make(http.Header),
+				}, nil)
+				mockRuntime.EXPECT().DoRequest(&http.Request{
+					Header: http.Header{
+						"X-Content-Length": []string{"0"},
+					},
+				}).Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
 					Body:       &fixtures.NopReadCloser{},
@@ -163,7 +186,14 @@ func TestRequestUploadInfoError(t *testing.T) {
 				err: fmt.Errorf("error decoding upload info: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(&http.Response{
+				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(&http.Request{
+					Header: make(http.Header),
+				}, nil)
+				mockRuntime.EXPECT().DoRequest(&http.Request{
+					Header: http.Header{
+						"X-Content-Length": []string{"0"},
+					},
+				}).Return(&http.Response{
 					StatusCode: 200,
 					Status:     "status",
 					Body:       &fixtures.NopReadCloser{},
@@ -385,28 +415,28 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 		},
 		"open-input-file-for-compression-error": {
 			input: testInput{
-				info: &mocks.MockFileInfo{IsDiri: false},
+				info: &mocks.MockFileInfo{},
 			},
 			output: testOutput{
 				err: fmt.Errorf("error opening input file for compression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
-				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{IsDiri: false}, "").Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
 				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(nil)
 				mockRuntime.EXPECT().OpenFile("").Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"write-input-file-for-compression-error": {
 			input: testInput{
-				info: &mocks.MockFileInfo{IsDiri: false},
+				info: &mocks.MockFileInfo{},
 			},
 			output: testOutput{
 				err: fmt.Errorf("error writing input file for compression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
-				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{IsDiri: false}, "").Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
 				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(nil)
 				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
 				mockRuntime.EXPECT().Copy(nil, &fixtures.NopReadCloser{}).Return(int64(0), fmt.Errorf("error"))
@@ -482,6 +512,20 @@ func TestUncompressError(t *testing.T) {
 				inputRelativePath := filepath.Clean("")
 				mockRuntime.EXPECT().OpenFile(inputRelativePath).Return(&fixtures.NopReadCloser{}, nil)
 				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
+			},
+		},
+		"create-root-path-error": {
+			input: testInput{
+				outputRelativePath: "./nonDotRootPath",
+			},
+			output: testOutput{
+				err: fmt.Errorf("error creating root path for uncompression: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				inputRelativePath := filepath.Clean("")
+				mockRuntime.EXPECT().OpenFile(inputRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().CreateFolder("nonDotRootPath").Return(fmt.Errorf("error"))
 			},
 		},
 		"read-compression-header-error": {
@@ -580,6 +624,270 @@ func TestUncompressError(t *testing.T) {
 			err := fileSvc.Uncompress(test.input.inputRelativePath, test.input.outputRelativePath)
 			assert.Equal(t, test.output, testOutput{
 				err: err,
+			})
+		})
+	}
+}
+
+func TestRemoveFileTreeError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			relativePath string
+		}
+		testOutput struct {
+			err error
+		}
+	)
+	var tests = map[string]struct {
+		input  testInput
+		output testOutput
+		mocks  func()
+	}{
+		"remove-file-tree-error": {
+			output: testOutput{
+				err: fmt.Errorf("error removing file tree: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				relativePath := filepath.Clean("")
+				mockRuntime.EXPECT().RemoveFileTree(relativePath).Return(fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			err := fileSvc.RemoveFileTree(test.input.relativePath)
+			assert.Equal(t, test.output, testOutput{
+				err: err,
+			})
+		})
+	}
+}
+
+func TestOpenFileError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			relativePath string
+		}
+		testOutput struct {
+			file io.ReadCloser
+			err  error
+		}
+	)
+	var tests = map[string]struct {
+		input  testInput
+		output testOutput
+		mocks  func()
+	}{
+		"open-file-error": {
+			output: testOutput{
+				err: fmt.Errorf("error opening file: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				relativePath := filepath.Clean("")
+				mockRuntime.EXPECT().OpenFile(relativePath).Return(nil, fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			file, err := fileSvc.OpenFile(test.input.relativePath)
+			assert.Equal(t, test.output, testOutput{
+				file: file,
+				err:  err,
+			})
+		})
+	}
+}
+
+func TestCreateFileError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			relativePath string
+		}
+		testOutput struct {
+			file io.WriteCloser
+			err  error
+		}
+	)
+	var tests = map[string]struct {
+		input  testInput
+		output testOutput
+		mocks  func()
+	}{
+		"create-folder-error": {
+			input: testInput{
+				relativePath: "./folder/file.txt",
+			},
+			output: testOutput{
+				err: fmt.Errorf("error creating folder for file: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				folderPath := filepath.Dir(filepath.Clean("./folder/file.txt"))
+				mockRuntime.EXPECT().CreateFolder(folderPath).Return(fmt.Errorf("error"))
+			},
+		},
+		"create-file-error": {
+			output: testOutput{
+				err: fmt.Errorf("error creating file: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				relativePath := filepath.Clean("")
+				mockRuntime.EXPECT().CreateFile(relativePath).Return(nil, fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			file, err := fileSvc.CreateFile(test.input.relativePath)
+			assert.Equal(t, test.output, testOutput{
+				file: file,
+				err:  err,
+			})
+		})
+	}
+}
+
+func TestListFilesError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			relativePath string
+		}
+		testOutput struct {
+			files []string
+			err   error
+		}
+	)
+	var tests = map[string]struct {
+		input  testInput
+		output testOutput
+		mocks  func()
+	}{
+		"no-such-folder-error": {
+			output: testOutput{
+				err: &services.NoSuchFolderError{Path: filepath.Clean("")},
+			},
+			mocks: func() {
+				relativePath := filepath.Clean("")
+				mockRuntime.EXPECT().ReadFolder(relativePath).Return(nil, fmt.Errorf("no such file or directory"))
+			},
+		},
+		"read-folder-error": {
+			output: testOutput{
+				err: fmt.Errorf("error reading folder to list files: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				relativePath := filepath.Clean("")
+				mockRuntime.EXPECT().ReadFolder(relativePath).Return(nil, fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			files, err := fileSvc.ListFiles(test.input.relativePath)
+			assert.Equal(t, test.output, testOutput{
+				files: files,
+				err:   err,
+			})
+		})
+	}
+}
+
+func TestGetFileSizeError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			relativePath string
+		}
+		testOutput struct {
+			size int
+			err  error
+		}
+	)
+	var tests = map[string]struct {
+		input  testInput
+		output testOutput
+		mocks  func()
+	}{
+		"get-file-info-error": {
+			output: testOutput{
+				err: fmt.Errorf("error getting file infos to get size: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				relativePath := filepath.Clean("")
+				mockRuntime.EXPECT().GetFileInfo(relativePath).Return(nil, fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			size, err := fileSvc.GetFileSize(test.input.relativePath)
+			assert.Equal(t, test.output, testOutput{
+				size: size,
+				err:  err,
 			})
 		})
 	}
