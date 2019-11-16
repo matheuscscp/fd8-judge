@@ -114,7 +114,7 @@ func (f *defaultFileService) DownloadFile(relativePath, url string, headers http
 	// create request object
 	req, err := f.runtime.NewHTTPRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return 0, &BuildFileDownloadRequestError{Wrapped: err}
+		return 0, fmt.Errorf("error building download request: %w", err)
 	}
 	for headerName, headerValues := range headers {
 		for _, headerValue := range headerValues {
@@ -125,26 +125,26 @@ func (f *defaultFileService) DownloadFile(relativePath, url string, headers http
 	// do request
 	resp, err := f.runtime.DoRequest(req)
 	if err != nil {
-		return 0, &DoFileDownloadRequestError{Wrapped: err}
+		return 0, fmt.Errorf("error performing download request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// check status
 	if resp.StatusCode != http.StatusOK {
-		return 0, &UnexpectedStatusInFileDownloadResponseError{Status: resp.Status}
+		return 0, fmt.Errorf("unexpected status in download response: %s", resp.Status)
 	}
 
 	// create file
 	out, err := f.runtime.CreateFile(relativePath)
 	if err != nil {
-		return 0, &CreateFileForDownloadError{Wrapped: err}
+		return 0, fmt.Errorf("error creating file for download data: %w", err)
 	}
 	defer out.Close()
 
 	// download
 	bytes, err := f.runtime.Copy(out, resp.Body)
 	if err != nil {
-		return 0, &TransferAndStoreDownloadFileError{Wrapped: err}
+		return 0, fmt.Errorf("error reading and writing download data: %w", err)
 	}
 	return bytes, nil
 }
@@ -154,19 +154,19 @@ func (f *defaultFileService) RequestUploadInfo(authorizedServerURL string, fileS
 	// do request
 	resp, err := f.runtime.DoGetRequest(fmt.Sprintf("%s?fileSize=%d", authorizedServerURL, fileSize))
 	if err != nil {
-		return nil, &RequestFileUploadInfoError{Wrapped: err}
+		return nil, fmt.Errorf("error requesting upload info: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// check status
 	if resp.StatusCode != http.StatusOK {
-		return nil, &UnexpectedStatusInFileUploadInfoResponseError{Status: resp.Status}
+		return nil, fmt.Errorf("unexpected status in upload info response: %s", resp.Status)
 	}
 
 	// parse response
 	uploadInfo, err := f.runtime.DecodeUploadInfo(resp.Body)
 	if err != nil {
-		return nil, &DecodeFileUploadInfoError{Wrapped: err}
+		return nil, fmt.Errorf("error decoding upload info: %w", err)
 	}
 
 	return uploadInfo, nil
@@ -177,14 +177,14 @@ func (f *defaultFileService) UploadFile(relativePath string, uploadInfo *FileUpl
 	// open file
 	file, err := f.runtime.OpenFile(relativePath)
 	if err != nil {
-		return &OpenUploadFileError{Wrapped: err}
+		return fmt.Errorf("error opening upload file: %w", err)
 	}
 	defer file.Close()
 
 	// create request object
 	req, err := f.runtime.NewHTTPRequest(uploadInfo.Method, uploadInfo.URL, file)
 	if err != nil {
-		return &BuildFileUploadRequestError{Wrapped: err}
+		return fmt.Errorf("error building upload request: %w", err)
 	}
 	for headerName, headerValues := range uploadInfo.Headers {
 		for _, headerValue := range headerValues {
@@ -195,13 +195,13 @@ func (f *defaultFileService) UploadFile(relativePath string, uploadInfo *FileUpl
 	// do request
 	resp, err := f.runtime.DoRequest(req)
 	if err != nil {
-		return &DoFileUploadRequestError{Wrapped: err}
+		return fmt.Errorf("error performing upload request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// check status
 	if resp.StatusCode != http.StatusOK {
-		return &UnexpectedStatusInFileUploadResponseError{Status: resp.Status}
+		return fmt.Errorf("unexpected status in upload response: %s", resp.Status)
 	}
 
 	return nil
@@ -213,7 +213,7 @@ func (f *defaultFileService) Compress(inputRelativePath, outputRelativePath stri
 	outputRelativePath = filepath.Clean(outputRelativePath)
 	outFile, err := f.runtime.CreateFile(outputRelativePath)
 	if err != nil {
-		return &CreateFileForCompressionError{Wrapped: err}
+		return fmt.Errorf("error creating output file for compression: %w", err)
 	}
 	outGzip := gzip.NewWriter(outFile)
 	outTar := tar.NewWriter(outGzip)
@@ -252,31 +252,31 @@ func (f *defaultFileService) VisitNodeForCompression(
 	err error,
 ) error {
 	if err != nil {
-		return &WalkTreeForCompressionError{Wrapped: err}
+		return fmt.Errorf("error walking file tree for compression: %w", err)
 	}
 
 	header, err := f.runtime.CreateCompressionHeader(info, curPath)
 	if err != nil {
-		return &CreateCompressionHeaderError{Wrapped: err}
+		return fmt.Errorf("error creating compression header: %w", err)
 	}
 
 	// Name within tar must have relative path information
 	header.Name = inputRelativePath
 
 	if err := f.runtime.WriteCompressionHeader(outTar, header); err != nil {
-		return &WriteCompressionHeaderError{Wrapped: err}
+		return fmt.Errorf("error writing compression header: %w", err)
 	}
 
 	// write file
 	if isFile := !info.IsDir(); isFile {
 		file, err := f.runtime.OpenFile(curPath)
 		if err != nil {
-			return &OpenInputFileForCompressionError{Wrapped: err}
+			return fmt.Errorf("error opening input file for compression: %w", err)
 		}
 		defer file.Close()
 
 		if _, err := f.runtime.Copy(outTar, file); err != nil {
-			return &WriteInputFileForCompressionError{Wrapped: err}
+			return fmt.Errorf("error writing input file for compression: %w", err)
 		}
 	}
 
@@ -289,12 +289,12 @@ func (f *defaultFileService) Uncompress(inputRelativePath, outputRelativePath st
 	inputRelativePath = filepath.Clean(inputRelativePath)
 	inFile, err := f.runtime.OpenFile(inputRelativePath)
 	if err != nil {
-		return &OpenCompressedFileError{Wrapped: err}
+		return fmt.Errorf("error opening compressed file: %w", err)
 	}
 	inGzip, err := f.runtime.CreateCompressionReader(inFile)
 	if err != nil {
 		inFile.Close()
-		return &CreateCompressionReaderError{Wrapped: err}
+		return fmt.Errorf("error creating compression reader: %w", err)
 	}
 	inTar := tar.NewReader(inGzip)
 	closeIn := func() {
@@ -314,14 +314,14 @@ func (f *defaultFileService) Uncompress(inputRelativePath, outputRelativePath st
 			break
 		} else if err != nil {
 			removeOut()
-			return &ReadCompressionHeaderError{Wrapped: err}
+			return fmt.Errorf("error reading compression header: %w", err)
 		}
 
 		// validate path
 		p := header.Name
 		if p == "" || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
 			removeOut()
-			return &InvalidCompressionHeaderNameError{Name: p}
+			return fmt.Errorf("invalid compression header name, want relative path, got '%s'", p)
 		}
 		curPath := filepath.Join(outputRelativePath, p)
 
@@ -329,18 +329,18 @@ func (f *defaultFileService) Uncompress(inputRelativePath, outputRelativePath st
 		case tar.TypeDir: // folder
 			if err := f.runtime.CreateFolder(curPath); err != nil {
 				removeOut()
-				return &CreateFolderForUncompressionError{Wrapped: err}
+				return fmt.Errorf("error creating folder for uncompression: %w", err)
 			}
 		case tar.TypeReg: // file
 			file, err := f.runtime.CreateFile(curPath)
 			if err != nil {
 				removeOut()
-				return &CreateFileForUncompressionError{Wrapped: err}
+				return fmt.Errorf("error creating file for uncompression: %w", err)
 			}
 			if _, err := f.runtime.Copy(file, inTar); err != nil {
 				file.Close()
 				removeOut()
-				return &WriteOutputFileForUncompressionError{Wrapped: err}
+				return fmt.Errorf("error writing output file for uncompression: %w", err)
 			}
 			file.Close()
 		}

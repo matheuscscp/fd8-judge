@@ -4,7 +4,6 @@ package services_test
 
 import (
 	"archive/tar"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -35,24 +34,15 @@ func TestDownloadFileError(t *testing.T) {
 			bytes int64
 			err   error
 		}
-		testOutputProps struct {
-			errStr    string
-			errUnwrap error
-		}
 	)
 	var tests = map[string]struct {
-		input    testInput
-		output   testOutput
-		outProps testOutputProps
-		mocks    func()
+		input  testInput
+		output testOutput
+		mocks  func()
 	}{
 		"build-download-request-error": {
 			output: testOutput{
-				err: &services.BuildFileDownloadRequestError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error building download request: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error building download request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
@@ -60,11 +50,7 @@ func TestDownloadFileError(t *testing.T) {
 		},
 		"do-download-request-error": {
 			output: testOutput{
-				err: &services.DoFileDownloadRequestError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error performing download request: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error performing download request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -73,10 +59,7 @@ func TestDownloadFileError(t *testing.T) {
 		},
 		"unexpected-status-in-download-response-error": {
 			output: testOutput{
-				err: &services.UnexpectedStatusInFileDownloadResponseError{Status: "status"},
-			},
-			outProps: testOutputProps{
-				errStr: "unexpected status in download response: status",
+				err: fmt.Errorf("unexpected status in download response: status"),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -89,11 +72,7 @@ func TestDownloadFileError(t *testing.T) {
 		},
 		"create-file-error": {
 			output: testOutput{
-				err: &services.CreateFileForDownloadError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error creating file for download data: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error creating file for download data: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -106,11 +85,7 @@ func TestDownloadFileError(t *testing.T) {
 		},
 		"transfer-and-store-download-data-error": {
 			output: testOutput{
-				err: &services.TransferAndStoreDownloadFileError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error reading and writing download data: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error reading and writing download data: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
@@ -135,17 +110,9 @@ func TestDownloadFileError(t *testing.T) {
 
 			fileSvc := services.NewFileService(mockRuntime)
 			bytes, err := fileSvc.DownloadFile(test.input.relativePath, test.input.url, test.input.headers)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
 			assert.Equal(t, test.output, testOutput{
 				bytes: bytes,
 				err:   err,
-			})
-			assert.Equal(t, test.outProps, testOutputProps{
-				errStr:    errStr,
-				errUnwrap: errors.Unwrap(err),
 			})
 		})
 	}
@@ -165,24 +132,15 @@ func TestRequestUploadInfoError(t *testing.T) {
 			uploadInfo *services.FileUploadInfo
 			err        error
 		}
-		testOutputProps struct {
-			errStr    string
-			errUnwrap error
-		}
 	)
 	var tests = map[string]struct {
-		input    testInput
-		output   testOutput
-		outProps testOutputProps
-		mocks    func()
+		input  testInput
+		output testOutput
+		mocks  func()
 	}{
 		"request-upload-info-error": {
 			output: testOutput{
-				err: &services.RequestFileUploadInfoError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error requesting upload info: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error requesting upload info: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(nil, fmt.Errorf("error"))
@@ -190,10 +148,7 @@ func TestRequestUploadInfoError(t *testing.T) {
 		},
 		"unexpected-status-in-download-response-error": {
 			output: testOutput{
-				err: &services.UnexpectedStatusInFileUploadInfoResponseError{Status: "status"},
-			},
-			outProps: testOutputProps{
-				errStr: "unexpected status in upload info response: status",
+				err: fmt.Errorf("unexpected status in upload info response: status"),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(&http.Response{
@@ -205,11 +160,7 @@ func TestRequestUploadInfoError(t *testing.T) {
 		},
 		"decode-upload-info-error": {
 			output: testOutput{
-				err: &services.DecodeFileUploadInfoError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error decoding upload info: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error decoding upload info: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(&http.Response{
@@ -233,17 +184,9 @@ func TestRequestUploadInfoError(t *testing.T) {
 
 			fileSvc := services.NewFileService(mockRuntime)
 			uploadInfo, err := fileSvc.RequestUploadInfo(test.input.authorizedServerURL, test.input.fileSize)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
 			assert.Equal(t, test.output, testOutput{
 				uploadInfo: uploadInfo,
 				err:        err,
-			})
-			assert.Equal(t, test.outProps, testOutputProps{
-				errStr:    errStr,
-				errUnwrap: errors.Unwrap(err),
 			})
 		})
 	}
@@ -262,24 +205,15 @@ func TestUploadFileError(t *testing.T) {
 		testOutput struct {
 			err error
 		}
-		testOutputProps struct {
-			errStr    string
-			errUnwrap error
-		}
 	)
 	var tests = map[string]struct {
-		input    testInput
-		output   testOutput
-		outProps testOutputProps
-		mocks    func()
+		input  testInput
+		output testOutput
+		mocks  func()
 	}{
 		"open-upload-file-error": {
 			output: testOutput{
-				err: &services.OpenUploadFileError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error opening upload file: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error opening upload file: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().OpenFile("").Return(nil, fmt.Errorf("error"))
@@ -290,11 +224,7 @@ func TestUploadFileError(t *testing.T) {
 				uploadInfo: &services.FileUploadInfo{},
 			},
 			output: testOutput{
-				err: &services.BuildFileUploadRequestError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error building upload request: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error building upload request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
@@ -306,11 +236,7 @@ func TestUploadFileError(t *testing.T) {
 				uploadInfo: &services.FileUploadInfo{},
 			},
 			output: testOutput{
-				err: &services.DoFileUploadRequestError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error performing upload request: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error performing upload request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
@@ -323,10 +249,7 @@ func TestUploadFileError(t *testing.T) {
 				uploadInfo: &services.FileUploadInfo{},
 			},
 			output: testOutput{
-				err: &services.UnexpectedStatusInFileUploadResponseError{Status: "status"},
-			},
-			outProps: testOutputProps{
-				errStr: "unexpected status in upload response: status",
+				err: fmt.Errorf("unexpected status in upload response: status"),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
@@ -351,16 +274,8 @@ func TestUploadFileError(t *testing.T) {
 
 			fileSvc := services.NewFileService(mockRuntime)
 			err := fileSvc.UploadFile(test.input.relativePath, test.input.uploadInfo)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
 			assert.Equal(t, test.output, testOutput{
 				err: err,
-			})
-			assert.Equal(t, test.outProps, testOutputProps{
-				errStr:    errStr,
-				errUnwrap: errors.Unwrap(err),
 			})
 		})
 	}
@@ -379,24 +294,15 @@ func TestCompressError(t *testing.T) {
 		testOutput struct {
 			err error
 		}
-		testOutputProps struct {
-			errStr    string
-			errUnwrap error
-		}
 	)
 	var tests = map[string]struct {
-		input    testInput
-		output   testOutput
-		outProps testOutputProps
-		mocks    func()
+		input  testInput
+		output testOutput
+		mocks  func()
 	}{
 		"create-file-for-compression-error": {
 			output: testOutput{
-				err: &services.CreateFileForCompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error creating output file for compression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error creating output file for compression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				outputRelativePath := filepath.Clean("")
@@ -416,16 +322,8 @@ func TestCompressError(t *testing.T) {
 
 			fileSvc := services.NewFileService(mockRuntime)
 			err := fileSvc.Compress(test.input.inputRelativePath, test.input.outputRelativePath)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
 			assert.Equal(t, test.output, testOutput{
 				err: err,
-			})
-			assert.Equal(t, test.outProps, testOutputProps{
-				errStr:    errStr,
-				errUnwrap: errors.Unwrap(err),
 			})
 		})
 	}
@@ -447,27 +345,18 @@ func TestVisitNodeForCompression(t *testing.T) {
 		testOutput struct {
 			err error
 		}
-		testOutputProps struct {
-			errStr    string
-			errUnwrap error
-		}
 	)
 	var tests = map[string]struct {
-		input    testInput
-		output   testOutput
-		outProps testOutputProps
-		mocks    func()
+		input  testInput
+		output testOutput
+		mocks  func()
 	}{
 		"walk-tree-for-compression-error": {
 			input: testInput{
 				err: fmt.Errorf("error"),
 			},
 			output: testOutput{
-				err: &services.WalkTreeForCompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error walking file tree for compression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error walking file tree for compression: %w", fmt.Errorf("error")),
 			},
 		},
 		"create-compression-header-error": {
@@ -475,11 +364,7 @@ func TestVisitNodeForCompression(t *testing.T) {
 				info: &mocks.MockFileInfo{},
 			},
 			output: testOutput{
-				err: &services.CreateCompressionHeaderError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error creating compression header: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error creating compression header: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(nil, fmt.Errorf("error"))
@@ -490,11 +375,7 @@ func TestVisitNodeForCompression(t *testing.T) {
 				info: &mocks.MockFileInfo{},
 			},
 			output: testOutput{
-				err: &services.WriteCompressionHeaderError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error writing compression header: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error writing compression header: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
@@ -507,11 +388,7 @@ func TestVisitNodeForCompression(t *testing.T) {
 				info: &mocks.MockFileInfo{IsDiri: false},
 			},
 			output: testOutput{
-				err: &services.OpenInputFileForCompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error opening input file for compression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error opening input file for compression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
@@ -525,11 +402,7 @@ func TestVisitNodeForCompression(t *testing.T) {
 				info: &mocks.MockFileInfo{IsDiri: false},
 			},
 			output: testOutput{
-				err: &services.WriteInputFileForCompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error writing input file for compression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error writing input file for compression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
@@ -566,16 +439,8 @@ func TestVisitNodeForCompression(t *testing.T) {
 				test.input.info,
 				test.input.err,
 			)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
 			assert.Equal(t, test.output, testOutput{
 				err: err,
-			})
-			assert.Equal(t, test.outProps, testOutputProps{
-				errStr:    errStr,
-				errUnwrap: errors.Unwrap(err),
 			})
 		})
 	}
@@ -594,24 +459,15 @@ func TestUncompressError(t *testing.T) {
 		testOutput struct {
 			err error
 		}
-		testOutputProps struct {
-			errStr    string
-			errUnwrap error
-		}
 	)
 	var tests = map[string]struct {
-		input    testInput
-		output   testOutput
-		outProps testOutputProps
-		mocks    func()
+		input  testInput
+		output testOutput
+		mocks  func()
 	}{
 		"open-compressed-file-error": {
 			output: testOutput{
-				err: &services.OpenCompressedFileError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error opening compressed file: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error opening compressed file: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				inputRelativePath := filepath.Clean("")
@@ -620,11 +476,7 @@ func TestUncompressError(t *testing.T) {
 		},
 		"create-compression-reader-error": {
 			output: testOutput{
-				err: &services.CreateCompressionReaderError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error creating compression reader: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error creating compression reader: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				inputRelativePath := filepath.Clean("")
@@ -634,11 +486,7 @@ func TestUncompressError(t *testing.T) {
 		},
 		"read-compression-header-error": {
 			output: testOutput{
-				err: &services.ReadCompressionHeaderError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error reading compression header: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error reading compression header: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
@@ -651,10 +499,7 @@ func TestUncompressError(t *testing.T) {
 		},
 		"invalid-compression-header-name-error": {
 			output: testOutput{
-				err: &services.InvalidCompressionHeaderNameError{Name: "/"},
-			},
-			outProps: testOutputProps{
-				errStr: `invalid compression header name, want relative path, got: "/"`,
+				err: fmt.Errorf("invalid compression header name, want relative path, got '/'"),
 			},
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
@@ -667,11 +512,7 @@ func TestUncompressError(t *testing.T) {
 		},
 		"create-folder-for-uncompression-error": {
 			output: testOutput{
-				err: &services.CreateFolderForUncompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error creating folder for uncompression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error creating folder for uncompression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
@@ -689,11 +530,7 @@ func TestUncompressError(t *testing.T) {
 		},
 		"create-file-for-uncompression-error": {
 			output: testOutput{
-				err: &services.CreateFileForUncompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error creating file for uncompression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error creating file for uncompression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
@@ -711,11 +548,7 @@ func TestUncompressError(t *testing.T) {
 		},
 		"write-output-file-for-uncompression-error": {
 			output: testOutput{
-				err: &services.WriteOutputFileForUncompressionError{Wrapped: fmt.Errorf("error")},
-			},
-			outProps: testOutputProps{
-				errStr:    "error writing output file for uncompression: error",
-				errUnwrap: fmt.Errorf("error"),
+				err: fmt.Errorf("error writing output file for uncompression: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
@@ -745,16 +578,8 @@ func TestUncompressError(t *testing.T) {
 
 			fileSvc := services.NewFileService(mockRuntime)
 			err := fileSvc.Uncompress(test.input.inputRelativePath, test.input.outputRelativePath)
-			errStr := ""
-			if err != nil {
-				errStr = err.Error()
-			}
 			assert.Equal(t, test.output, testOutput{
 				err: err,
-			})
-			assert.Equal(t, test.outProps, testOutputProps{
-				errStr:    errStr,
-				errUnwrap: errors.Unwrap(err),
 			})
 		})
 	}
