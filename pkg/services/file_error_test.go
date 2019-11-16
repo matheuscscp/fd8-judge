@@ -3,19 +3,25 @@
 package services_test
 
 import (
+	"archive/tar"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/testing/fixtures"
+	"github.com/matheuscscp/fd8-judge/testing/mocks"
+	mockServices "github.com/matheuscscp/fd8-judge/testing/mocks/pkg/services"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDownloadFileError(t *testing.T) {
-	var mockRuntime *services.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -75,7 +81,7 @@ func TestDownloadFileError(t *testing.T) {
 				mockRuntime.EXPECT().DoRequest(nil).Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
-					Body:       ioutil.NopCloser(nil),
+					Body:       &fixtures.NopReadCloser{},
 				}, nil)
 			},
 		},
@@ -84,16 +90,34 @@ func TestDownloadFileError(t *testing.T) {
 				err: &services.CreateFileForDownloadError{Wrapped: fmt.Errorf("error")},
 			},
 			outProps: testOutputProps{
-				errStr:    "error creating file for downloaded data: error",
+				errStr:    "error creating file for download data: error",
 				errUnwrap: fmt.Errorf("error"),
 			},
 			mocks: func() {
 				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
 				mockRuntime.EXPECT().DoRequest(nil).Return(&http.Response{
 					StatusCode: 200,
-					Body:       ioutil.NopCloser(nil),
+					Body:       &fixtures.NopReadCloser{},
 				}, nil)
 				mockRuntime.EXPECT().CreateFile("").Return(nil, fmt.Errorf("error"))
+			},
+		},
+		"transfer-and-store-download-data-error": {
+			output: testOutput{
+				err: &services.TransferAndStoreDownloadFileError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error reading and writing download data: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
+				mockRuntime.EXPECT().DoRequest(nil).Return(&http.Response{
+					StatusCode: 200,
+					Body:       &fixtures.NopReadCloser{},
+				}, nil)
+				mockRuntime.EXPECT().CreateFile("").Return(&fixtures.NopWriteCloser{}, nil)
+				mockRuntime.EXPECT().Copy(&fixtures.NopWriteCloser{}, &fixtures.NopReadCloser{}).Return(int64(0), fmt.Errorf("error"))
 			},
 		},
 	}
@@ -102,8 +126,10 @@ func TestDownloadFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = services.NewMockFileServiceRuntime(ctrl)
-			test.mocks()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
 
 			fileSvc := services.NewFileService(mockRuntime)
 			bytes, err := fileSvc.DownloadFile(test.input.relativePath, test.input.url, test.input.headers)
@@ -111,15 +137,20 @@ func TestDownloadFileError(t *testing.T) {
 			if err != nil {
 				errStr = err.Error()
 			}
-			assert.Equal(t, test.output.bytes, bytes)
-			assert.Equal(t, test.output.err, err)
-			assert.Equal(t, test.outProps.errStr, errStr)
+			assert.Equal(t, test.output, testOutput{
+				bytes: bytes,
+				err:   err,
+			})
+			assert.Equal(t, test.outProps, testOutputProps{
+				errStr:    errStr,
+				errUnwrap: errors.Unwrap(err),
+			})
 		})
 	}
 }
 
 func TestRequestUploadInfoError(t *testing.T) {
-	var mockRuntime *services.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -164,7 +195,7 @@ func TestRequestUploadInfoError(t *testing.T) {
 				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
-					Body:       ioutil.NopCloser(nil),
+					Body:       &fixtures.NopReadCloser{},
 				}, nil)
 			},
 		},
@@ -180,9 +211,9 @@ func TestRequestUploadInfoError(t *testing.T) {
 				mockRuntime.EXPECT().DoGetRequest("?fileSize=0").Return(&http.Response{
 					StatusCode: 200,
 					Status:     "status",
-					Body:       ioutil.NopCloser(nil),
+					Body:       &fixtures.NopReadCloser{},
 				}, nil)
-				mockRuntime.EXPECT().DecodeUploadInfo(ioutil.NopCloser(nil)).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().DecodeUploadInfo(&fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
 			},
 		},
 	}
@@ -191,8 +222,10 @@ func TestRequestUploadInfoError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = services.NewMockFileServiceRuntime(ctrl)
-			test.mocks()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
 
 			fileSvc := services.NewFileService(mockRuntime)
 			uploadInfo, err := fileSvc.RequestUploadInfo(test.input.authorizedServerURL, test.input.fileSize)
@@ -200,15 +233,20 @@ func TestRequestUploadInfoError(t *testing.T) {
 			if err != nil {
 				errStr = err.Error()
 			}
-			assert.Equal(t, test.output.uploadInfo, uploadInfo)
-			assert.Equal(t, test.output.err, err)
-			assert.Equal(t, test.outProps.errStr, errStr)
+			assert.Equal(t, test.output, testOutput{
+				uploadInfo: uploadInfo,
+				err:        err,
+			})
+			assert.Equal(t, test.outProps, testOutputProps{
+				errStr:    errStr,
+				errUnwrap: errors.Unwrap(err),
+			})
 		})
 	}
 }
 
 func TestUploadFileError(t *testing.T) {
-	var mockRuntime *services.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -253,8 +291,8 @@ func TestUploadFileError(t *testing.T) {
 				errUnwrap: fmt.Errorf("error"),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(ioutil.NopCloser(nil), nil)
-				mockRuntime.EXPECT().NewHTTPRequest("", "", ioutil.NopCloser(nil)).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewHTTPRequest("", "", &fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"do-upload-request-error": {
@@ -269,8 +307,8 @@ func TestUploadFileError(t *testing.T) {
 				errUnwrap: fmt.Errorf("error"),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(ioutil.NopCloser(nil), nil)
-				mockRuntime.EXPECT().NewHTTPRequest("", "", ioutil.NopCloser(nil)).Return(&http.Request{}, nil)
+				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewHTTPRequest("", "", &fixtures.NopReadCloser{}).Return(&http.Request{}, nil)
 				mockRuntime.EXPECT().DoRequest(&http.Request{}).Return(nil, fmt.Errorf("error"))
 			},
 		},
@@ -285,12 +323,12 @@ func TestUploadFileError(t *testing.T) {
 				errStr: "unexpected status in upload response: status",
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(ioutil.NopCloser(nil), nil)
-				mockRuntime.EXPECT().NewHTTPRequest("", "", ioutil.NopCloser(nil)).Return(&http.Request{}, nil)
+				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewHTTPRequest("", "", &fixtures.NopReadCloser{}).Return(&http.Request{}, nil)
 				mockRuntime.EXPECT().DoRequest(&http.Request{}).Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
-					Body:       ioutil.NopCloser(nil),
+					Body:       &fixtures.NopReadCloser{},
 				}, nil)
 			},
 		},
@@ -300,8 +338,10 @@ func TestUploadFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = services.NewMockFileServiceRuntime(ctrl)
-			test.mocks()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
 
 			fileSvc := services.NewFileService(mockRuntime)
 			err := fileSvc.UploadFile(test.input.relativePath, test.input.uploadInfo)
@@ -309,8 +349,227 @@ func TestUploadFileError(t *testing.T) {
 			if err != nil {
 				errStr = err.Error()
 			}
-			assert.Equal(t, test.output.err, err)
-			assert.Equal(t, test.outProps.errStr, errStr)
+			assert.Equal(t, test.output, testOutput{
+				err: err,
+			})
+			assert.Equal(t, test.outProps, testOutputProps{
+				errStr:    errStr,
+				errUnwrap: errors.Unwrap(err),
+			})
+		})
+	}
+}
+
+func TestCompressError(t *testing.T) {
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			inputRelativePath  string
+			outputRelativePath string
+		}
+		testOutput struct {
+			err error
+		}
+		testOutputProps struct {
+			errStr    string
+			errUnwrap error
+		}
+	)
+	var tests = map[string]struct {
+		input    testInput
+		output   testOutput
+		outProps testOutputProps
+		mocks    func()
+	}{
+		"create-file-for-compression-error": {
+			output: testOutput{
+				err: &services.CreateFileForCompressionError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error creating output file for compression: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				mockRuntime.EXPECT().CreateFile("").Return(nil, fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			err := fileSvc.Compress(test.input.inputRelativePath, test.input.outputRelativePath)
+			errStr := ""
+			if err != nil {
+				errStr = err.Error()
+			}
+			assert.Equal(t, test.output, testOutput{
+				err: err,
+			})
+			assert.Equal(t, test.outProps, testOutputProps{
+				errStr:    errStr,
+				errUnwrap: errors.Unwrap(err),
+			})
+		})
+	}
+}
+
+func TestVisitNodeForCompression(t *testing.T) {
+	var mockRuntime *mockServices.MockFileServiceRuntime
+
+	type (
+		testInput struct {
+			outTar            *tar.Writer
+			inputRelativePath string
+			curPath           string
+			info              os.FileInfo
+			err               error
+		}
+		testOutput struct {
+			err error
+		}
+		testOutputProps struct {
+			errStr    string
+			errUnwrap error
+		}
+	)
+	var tests = map[string]struct {
+		input    testInput
+		output   testOutput
+		outProps testOutputProps
+		mocks    func()
+	}{
+		"walk-tree-for-compression-error": {
+			input: testInput{
+				err: fmt.Errorf("error"),
+			},
+			output: testOutput{
+				err: &services.WalkTreeForCompressionError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error walking file tree for compression: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+		},
+		"create-compression-header-error": {
+			input: testInput{
+				info: &mocks.MockFileInfo{},
+			},
+			output: testOutput{
+				err: &services.CreateCompressionHeaderError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error creating compression header: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				curPath := filepath.Clean("")
+				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, curPath).Return(nil, fmt.Errorf("error"))
+			},
+		},
+		"write-compression-header-error": {
+			input: testInput{
+				info: &mocks.MockFileInfo{},
+			},
+			output: testOutput{
+				err: &services.WriteCompressionHeaderError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error writing compression header: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				curPath := filepath.Clean("")
+				name := filepath.ToSlash(curPath)
+				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, curPath).Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(fmt.Errorf("error"))
+			},
+		},
+		"open-input-file-for-compression-error": {
+			input: testInput{
+				info: &mocks.MockFileInfo{IsDiri: false},
+			},
+			output: testOutput{
+				err: &services.OpenInputFileForCompressionError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error opening input file for compression: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				curPath := filepath.Clean("")
+				name := filepath.ToSlash(curPath)
+				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{IsDiri: false}, curPath).Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(nil)
+				mockRuntime.EXPECT().OpenFile(curPath).Return(nil, fmt.Errorf("error"))
+			},
+		},
+		"write-input-file-for-compression-error": {
+			input: testInput{
+				info: &mocks.MockFileInfo{IsDiri: false},
+			},
+			output: testOutput{
+				err: &services.WriteInputFileForCompressionError{Wrapped: fmt.Errorf("error")},
+			},
+			outProps: testOutputProps{
+				errStr:    "error writing input file for compression: error",
+				errUnwrap: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				curPath := filepath.Clean("")
+				name := filepath.ToSlash(curPath)
+				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{IsDiri: false}, curPath).Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(nil)
+				mockRuntime.EXPECT().OpenFile(curPath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().Copy(nil, &fixtures.NopReadCloser{}).Return(int64(0), fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime).(interface { // comment to skip mockgen
+				VisitNodeForCompression(
+					outTar *tar.Writer,
+					inputRelativePath string,
+					curPath string,
+					info os.FileInfo,
+					err error,
+				) error
+			})
+			err := fileSvc.VisitNodeForCompression(
+				test.input.outTar,
+				test.input.inputRelativePath,
+				test.input.curPath,
+				test.input.info,
+				test.input.err,
+			)
+			errStr := ""
+			if err != nil {
+				errStr = err.Error()
+			}
+			assert.Equal(t, test.output, testOutput{
+				err: err,
+			})
+			assert.Equal(t, test.outProps, testOutputProps{
+				errStr:    errStr,
+				errUnwrap: errors.Unwrap(err),
+			})
 		})
 	}
 }

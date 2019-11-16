@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-
-	"github.com/matheuscscp/fd8-judge/pkg/services"
 )
 
 // HTTPServerFactory represents a factory of HTTP servers for testing.
@@ -81,7 +79,10 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 			return
 		}
 		port := listener.Addr().(*net.TCPAddr).Port
-		uploadInfo := &services.FileUploadInfo{
+		uploadInfo := &struct {
+			Method, URL string
+			Headers     http.Header
+		}{
 			Method: http.MethodPut,
 			URL:    fmt.Sprintf("http://localhost:%d/upload", port),
 			Headers: http.Header{

@@ -93,7 +93,7 @@ func TestUploadFile(t *testing.T) {
 		payload           = "PAYLOAD"
 		bytesToBeUploaded = len(payload)
 	)
-	err = ioutil.WriteFile(relativePath, []byte(payload), 0644)
+	err = ioutil.WriteFile(relativePath, []byte(payload), os.ModePerm)
 	assert.Equal(t, nil, err)
 
 	// upload

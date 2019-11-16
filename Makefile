@@ -1,6 +1,6 @@
-TESTABLE_PACKAGES := `go list ./... | egrep -v 'mocks|protos|migrations' | grep 'fd8-judge'`
+TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|testing' | grep 'fd8-judge/'`
 INTERFACES := `grep -rls ./pkg/bll ./pkg/dal ./pkg/services -e 'interface {$$'`
-MOCKS := $(shell echo ${INTERFACES} | sed 's/.go/_mock.go/g')
+MOCKS := $(shell echo ${INTERFACES} | sed 's/pkg/testing\/mocks\/pkg/g')
 
 setup:
 	@if ! which golangci-lint > /dev/null; then \
@@ -13,7 +13,7 @@ build:
 	@go build -o fd8-judge
 
 clean:
-	@rm -rf fd8-judge *.coverprofile
+	@rm -rf fd8-judge *coverage.out
 
 lint: check-golangci-lint
 	@golangci-lint run
@@ -28,17 +28,17 @@ test: test-unit test-integration
 
 test-unit:
 	@echo "UNIT TESTS"
-	@go test ${TESTABLE_PACKAGES} -tags=unit -coverprofile integration.coverprofile
+	@go test ${TESTABLE_PACKAGES} -tags=unit -coverprofile unit.coverage.out
 	@echo "\n"
 
 test-integration:
 	@echo "INTEGRATION TESTS"
-	@go test ${TESTABLE_PACKAGES} -tags=integration -coverprofile integration.coverprofile
+	@go test ${TESTABLE_PACKAGES} -tags=integration -coverprofile integration.coverage.out
 	@echo "\n"
 
 mocks: ${MOCKS}
 
-%_mock.go: %.go
+./testing/mocks/%: ./%
 	@go run github.com/golang/mock/mockgen -source $< -package $$(basename $$(dirname "$<")) -destination $@
 
 .PHONY: setup build clean lint check-golangci-lint test test-unit test-integration mocks
