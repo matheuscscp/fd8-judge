@@ -1,48 +1,82 @@
-TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|test|cmd' | grep 'fd8-judge/'`
-INTERFACES := `grep -rls ./pkg ./judge -e 'interface {$$'`
-MOCKS := $(shell echo ${INTERFACES} | sed 's/pkg/test\/mocks\/pkg/g')
 
-setup:
-	@if ! which golangci-lint > /dev/null; then \
-		curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
-		sh -s -- -b $$(go env GOPATH)/bin v1.21.0 \
-		exit 1; \
-	fi
+# prepend GOFLAGS env var with '-mod=vendor' so all go commands use vendor folder
+GOFLAGS := -mod=vendor $(GOFLAGS)
+export GOFLAGS
 
-build:
-	@go build -o fd8-judge
+# ==================================================================================================
+# long shell commands
+# ==================================================================================================
 
+MOCKGEN := go run github.com/golang/mock/mockgen
+GOLANGCI_LINT := go run github.com/golangci/golangci-lint/cmd/golangci-lint
+GOCOVMERGE := go run github.com/wadey/gocovmerge
+
+# ==================================================================================================
+# build and clean
+# ==================================================================================================
+
+BUILD_TARGETS := bin/fd8-judge
+
+.PHONY: build
+build: $(BUILD_TARGETS)
+
+bin/fd8-judge:
+	go build -o $@
+
+.PHONY: clean
 clean:
-	@rm -rf fd8-judge *coverage.out
+	rm -rf $(BUILD_TARGETS) bin/ cov/
 
-lint: check-golangci-lint
-	@golangci-lint run
+# ==================================================================================================
+# gen and clean-gen (artifacts generation: mocks, protos...)
+# ==================================================================================================
 
-check-golangci-lint:
-	@if ! which golangci-lint > /dev/null; then \
-		echo -e 'Please install golangci-lint running make setup. See https://github.com/golangci/golangci-lint#local-installation'; \
-		exit 1; \
-	fi
+INTERFACES := `grep -rls ./pkg ./judge -e 'interface {$$'`
+MOCKS := $(shell echo $(INTERFACES) | sed 's/\.\//\.\/test\/mocks\//g')
 
-test: test-unit test-integration
-
-test-unit:
-	@echo "UNIT TESTS"
-	@go test ${TESTABLE_PACKAGES} -tags=unit -coverprofile unit.coverage.out
-	@echo "\n"
-
-test-integration:
-	@echo "INTEGRATION TESTS"
-	@go test ${TESTABLE_PACKAGES} -tags=integration -coverprofile integration.coverage.out
-	@echo "\n"
-
-mocks: ${MOCKS}
+.PHONY: gen
+gen: $(MOCKS)
 
 ./test/mocks/%: ./%
-	@go run github.com/golang/mock/mockgen -source $< -package $$(basename $$(dirname "$<")) -destination $@
+	$(MOCKGEN) -source $< -package $$(basename $$(dirname "$<")) -destination $@
 
-cover:
-	@go run github.com/wadey/gocovmerge unit.coverage.out integration.coverage.out > full.coverage.out
-	@go tool cover -func=full.coverage.out | grep total | awk '{print $$3}'
+.PHONY: clean-gen
+clean-gen:
+	rm -rf $(MOCKS)
 
-.PHONY: setup build clean lint check-golangci-lint test test-unit test-integration mocks cover
+# ==================================================================================================
+# fix, lint, test and cover
+# ==================================================================================================
+
+TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|test|cmd|tools' | grep 'fd8-judge/'`
+COVERAGE_FILES := cov/unit.out cov/integration.out
+
+.PHONY: fix
+fix:
+	go mod tidy
+	go mod vendor
+
+.PHONY: lint
+lint:
+	$(GOLANGCI_LINT) run
+
+.PHONY: test
+test: test-unit test-integration
+
+.PHONY: test-unit
+test-unit: cov
+	go test $(TESTABLE_PACKAGES) -tags=unit -coverprofile cov/unit.out
+
+.PHONY: test-integration
+test-integration: cov
+	go test $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out
+
+cov:
+	mkdir -p ./cov
+
+.PHONY: cover
+cover: cov/full.out
+	go tool cover -func=cov/full.out | grep total | awk '{print $$3}'
+
+cov/full.out: cov $(COVERAGE_FILES)
+	$(GOCOVMERGE) $(COVERAGE_FILES) > $@

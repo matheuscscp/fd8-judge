@@ -15,7 +15,7 @@ linters-settings:
     packages:
       - log                       # prefer github.com/sirupsen/logrus
       - github.com/gogo/protobuf  # prefer github.com/golang/protobuf
-      - github.com/pkg/errors     # prefer golang.org/x/xerrors
+      - gotest.tools              # prefer github.com/stretchr/testify
       - golang.org/x/xerrors      # prefer fmt.Errorf with error wrapping
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)

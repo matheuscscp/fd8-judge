@@ -1,2 +1,2 @@
-fd8-judge
-*coverage.out
+bin/
+cov/

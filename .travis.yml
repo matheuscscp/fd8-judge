@@ -5,8 +5,6 @@ sudo: false
 jobs:
   include:
   - stage: lint
-    install: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
-      sh -s -- -b $(go env GOPATH)/bin v1.21.0
     script: make lint
   - stage: test
     script: make test
