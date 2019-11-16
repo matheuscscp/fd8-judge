@@ -25,7 +25,7 @@ type (
 		Headers http.Header `json:"headers"`
 	}
 
-	// FileService provides methods to manipulate files locally.
+	// FileService provides methods to manipulate files.
 	FileService interface {
 		// DownloadFile downloads a file storing it in the local file system and returns the number of
 		// bytes written.
@@ -89,12 +89,12 @@ type (
 		CreateFolder(relativePath string) error
 	}
 
-	// defaultFileService uses an interface to implement the DownloadFile() function.
+	// defaultFileService is the default implementation for FileService.
 	defaultFileService struct {
 		runtime FileServiceRuntime
 	}
 
-	// fileServiceDefaultRuntime is a runtime implementation for FileServiceRuntime.
+	// fileServiceDefaultRuntime is the default runtime implementation for FileServiceRuntime.
 	fileServiceDefaultRuntime struct {
 	}
 )

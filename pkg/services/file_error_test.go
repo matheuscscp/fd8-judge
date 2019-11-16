@@ -329,7 +329,7 @@ func TestCompressError(t *testing.T) {
 	}
 }
 
-func TestVisitNodeForCompression(t *testing.T) {
+func TestVisitNodeForCompressionError(t *testing.T) {
 	t.Parallel()
 
 	var mockRuntime *mockServices.MockFileServiceRuntime
