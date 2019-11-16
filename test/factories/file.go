@@ -1,4 +1,4 @@
-package factory
+package factories
 
 import (
 	"fmt"
@@ -74,16 +74,6 @@ func (f *Folder) Write(relativePath string) error {
 	return nil
 }
 
-// SortChildren sorts the children of the folder and returns the folder.
-func (f *Folder) SortChildren() FileTreeNode {
-	if len(f.Children) > 0 {
-		sort.Slice(f.Children, func(i, j int) bool {
-			return f.Children[i].GetName() < f.Children[j].GetName()
-		})
-	}
-	return f
-}
-
 // Clone clones the subtree rooted at the folder.
 func (f *Folder) Clone() FileTreeNode {
 	if len(f.Children) == 0 {
@@ -97,6 +87,16 @@ func (f *Folder) Clone() FileTreeNode {
 		Name:     f.Name,
 		Children: children,
 	}
+}
+
+// SortChildren sorts the children of the folder and returns the folder.
+func (f *Folder) SortChildren() FileTreeNode {
+	if len(f.Children) > 0 {
+		sort.Slice(f.Children, func(i, j int) bool {
+			return f.Children[i].GetName() < f.Children[j].GetName()
+		})
+	}
+	return f
 }
 
 // Remove removes the folder.
@@ -123,17 +123,17 @@ func (f *File) Write(relativePath string) error {
 	return nil
 }
 
-// SortChildren only returns the file.
-func (f *File) SortChildren() FileTreeNode {
-	return f
-}
-
 // Clone clones the file.
 func (f *File) Clone() FileTreeNode {
 	return &File{
 		Name:    f.Name,
 		Content: f.Content,
 	}
+}
+
+// SortChildren only returns the file.
+func (f *File) SortChildren() FileTreeNode {
+	return f
 }
 
 // Remove removes the file.
@@ -181,4 +181,16 @@ func ReadFileTree(relativePath string, readFileContents bool) (FileTreeNode, err
 		Name:    info.Name(),
 		Content: string(bytes),
 	}, nil
+}
+
+// SortFileTree sorts a whole file subtree and returns it.
+func SortFileTree(subroot FileTreeNode) FileTreeNode {
+	subroot.SortChildren()
+	if subroot.IsFolder() {
+		folder, _ := subroot.(*Folder)
+		for _, node := range folder.Children {
+			SortFileTree(node)
+		}
+	}
+	return subroot
 }

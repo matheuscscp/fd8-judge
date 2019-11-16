@@ -26,32 +26,32 @@ type MockFileInfo struct {
 	Sysi interface{}
 }
 
-// Name returns Name_.
+// Name returns Namei.
 func (m *MockFileInfo) Name() string {
 	return m.Namei
 }
 
-// Size returns Size_.
+// Size returns Sizei.
 func (m *MockFileInfo) Size() int64 {
 	return m.Sizei
 }
 
-// Mode returns Mode_.
+// Mode returns Modei.
 func (m *MockFileInfo) Mode() os.FileMode {
 	return m.Modei
 }
 
-// ModTime returns ModTime_.
+// ModTime returns ModTimei.
 func (m *MockFileInfo) ModTime() time.Time {
 	return m.ModTimei
 }
 
-// IsDir returns IsDir_.
+// IsDir returns IsDiri.
 func (m *MockFileInfo) IsDir() bool {
 	return m.IsDiri
 }
 
-// Sys returns Sys_.
+// Sys returns Sysi.
 func (m *MockFileInfo) Sys() interface{} {
 	return m.Sysi
 }

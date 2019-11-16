@@ -12,14 +12,14 @@ import (
 	"testing"
 
 	"github.com/matheuscscp/fd8-judge/pkg/services"
-	"github.com/matheuscscp/fd8-judge/testing/factory"
-	"github.com/matheuscscp/fd8-judge/testing/fixtures"
+	"github.com/matheuscscp/fd8-judge/test/factories"
+	"github.com/matheuscscp/fd8-judge/test/fixtures"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDownloadFile(t *testing.T) {
 	// create server
-	f := factory.NewHTTPServerFactory()
+	f := factories.NewHTTPServerFactory()
 	listener, server, err := f.NewDummy()
 	assert.Equal(t, nil, err)
 	port := listener.Addr().(*net.TCPAddr).Port
@@ -55,7 +55,7 @@ func TestDownloadFile(t *testing.T) {
 
 func TestRequestUploadInfo(t *testing.T) {
 	// create server
-	f := factory.NewHTTPServerFactory()
+	f := factories.NewHTTPServerFactory()
 	listener, server, err := f.NewDummyUploader()
 	assert.Equal(t, nil, err)
 	port := listener.Addr().(*net.TCPAddr).Port
@@ -82,7 +82,7 @@ func TestRequestUploadInfo(t *testing.T) {
 
 func TestUploadFile(t *testing.T) {
 	// create server
-	f := factory.NewHTTPServerFactory()
+	f := factories.NewHTTPServerFactory()
 	listener, server, err := f.NewDummyUploader()
 	assert.Equal(t, nil, err)
 	port := listener.Addr().(*net.TCPAddr).Port
@@ -131,8 +131,8 @@ func TestCompressAndUncompress(t *testing.T) {
 	fileSvc := services.NewFileService(nil)
 
 	var tests = map[string]struct {
-		fixture                  factory.FileTreeNode
-		expectedFileTree         factory.FileTreeNode
+		fixture                  factories.FileTreeNode
+		expectedFileTree         factories.FileTreeNode
 		inputRelativePath        string
 		uncompressedRelativePath string
 	}{
@@ -190,7 +190,7 @@ func TestCompressAndUncompress(t *testing.T) {
 			err = os.Remove("./TestCompressedFile.tar.gz")
 			assert.Equal(t, nil, err)
 
-			fileTree, err := factory.ReadFileTree(test.uncompressedRelativePath, true)
+			fileTree, err := factories.ReadFileTree(test.uncompressedRelativePath, true)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, test.expectedFileTree, fileTree)
 

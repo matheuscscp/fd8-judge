@@ -1,6 +1,6 @@
-TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|testing' | grep 'fd8-judge/'`
+TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|test' | grep 'fd8-judge/'`
 INTERFACES := `grep -rls ./pkg/bll ./pkg/dal ./pkg/services -e 'interface {$$'`
-MOCKS := $(shell echo ${INTERFACES} | sed 's/pkg/testing\/mocks\/pkg/g')
+MOCKS := $(shell echo ${INTERFACES} | sed 's/pkg/test\/mocks\/pkg/g')
 
 setup:
 	@if ! which golangci-lint > /dev/null; then \
@@ -38,7 +38,7 @@ test-integration:
 
 mocks: ${MOCKS}
 
-./testing/mocks/%: ./%
+./test/mocks/%: ./%
 	@go run github.com/golang/mock/mockgen -source $< -package $$(basename $$(dirname "$<")) -destination $@
 
 cover:
