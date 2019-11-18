@@ -15,12 +15,13 @@ GOCOVMERGE := go run github.com/wadey/gocovmerge
 # build and clean
 # ==================================================================================================
 
+ALL_GO_FILES := $(shell find . -name '*.go' | egrep -v 'test|vendor|tools')
 BUILD_TARGETS := bin/fd8-judge
 
 .PHONY: build
 build: $(BUILD_TARGETS)
 
-bin/fd8-judge:
+bin/fd8-judge: $(ALL_GO_FILES)
 	go build -o $@
 
 .PHONY: clean
@@ -68,8 +69,8 @@ test-unit: cov
 	go test $(TESTABLE_PACKAGES) -tags=unit -coverprofile cov/unit.out
 
 .PHONY: test-integration
-test-integration: cov
-	go test $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out
+test-integration: cov bin/fd8-judge
+	go test $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out -p 1
 
 cov:
 	mkdir -p ./cov
@@ -80,3 +81,10 @@ cover: cov/full.out
 
 cov/full.out: cov $(COVERAGE_FILES)
 	$(GOCOVMERGE) $(COVERAGE_FILES) > $@
+
+# ==================================================================================================
+# all
+# ==================================================================================================
+
+.PHONY: all
+all: gen fix lint test cover

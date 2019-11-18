@@ -13,10 +13,11 @@ linters-settings:
     list-type: blacklist
     include-go-root: true
     packages:
-      - log                       # prefer github.com/sirupsen/logrus
-      - github.com/gogo/protobuf  # prefer github.com/golang/protobuf
-      - gotest.tools              # prefer github.com/stretchr/testify
-      - golang.org/x/xerrors      # prefer fmt.Errorf with error wrapping
+      - log                               # prefer github.com/sirupsen/logrus
+      - github.com/gogo/protobuf          # prefer github.com/golang/protobuf
+      - gotest.tools                      # prefer github.com/stretchr/testify
+      - github.com/magiconair/properties  # prefer github.com/stretchr/testify
+      - golang.org/x/xerrors              # prefer fmt.Errorf with error wrapping
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 30

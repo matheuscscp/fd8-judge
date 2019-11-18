@@ -11,7 +11,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	defineJudgeCommand()
+}
+
 type (
+	// executeFlags holds the flags for the judge execute command.
 	executeFlags struct {
 		bundleRequestURL          string
 		bundleRequestHeaders      string
@@ -24,11 +29,12 @@ type (
 	}
 )
 
-func init() {
+// defineJudgeCommand defines the judge command and its subcommands.
+func defineJudgeCommand() {
 	judgeCmd := &cobra.Command{
 		Use:   "judge",
-		Short: "Automatic judge to execute and check problem solutions.",
-		Long:  "Execute or check a problem solution.",
+		Short: "Execute or check a problem solution.",
+		Long:  "Automatic judge to execute and check problem solutions.",
 	}
 	rootCmd.AddCommand(judgeCmd)
 
@@ -50,7 +56,7 @@ func init() {
 	judgeCmd.AddCommand(executeCmd)
 }
 
-// parseExecuteFlags parses the execute command flags.
+// parseExecuteFlags parses the judge execute command flags.
 func parseExecuteFlags(flags *executeFlags) (*judge.Executor, error) {
 	bundleHeaders := make(http.Header)
 	if err := json.Unmarshal([]byte(flags.bundleRequestHeaders), &bundleHeaders); err != nil {
@@ -98,7 +104,7 @@ func parseExecuteFlags(flags *executeFlags) (*judge.Executor, error) {
 	}, nil
 }
 
-// bindExecuteFlags binds execute command flags.
+// bindExecuteFlags binds judge execute command flags.
 func bindExecuteFlags(cmd *cobra.Command, flags *executeFlags) {
 	availableProgramServices := strings.Join(services.GetProgramServices(), ", ")
 	cmd.Flags().StringVar(

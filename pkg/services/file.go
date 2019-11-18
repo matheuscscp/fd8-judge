@@ -114,7 +114,7 @@ type (
 		runtime FileServiceRuntime
 	}
 
-	// fileServiceDefaultRuntime is the default runtime implementation for FileServiceRuntime.
+	// fileServiceDefaultRuntime is the default implementation of FileServiceRuntime.
 	fileServiceDefaultRuntime struct {
 	}
 )

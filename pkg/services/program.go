@@ -29,7 +29,7 @@ type (
 		RunCommand(cmd *exec.Cmd) error
 	}
 
-	// programServiceDefaultRuntime is the default runtime implementation for ProgramServiceRuntime.
+	// programServiceDefaultRuntime is the default implementation of ProgramServiceRuntime.
 	programServiceDefaultRuntime struct {
 	}
 
@@ -45,8 +45,7 @@ func NewProgramService(programServiceKey string, runtime ProgramServiceRuntime) 
 	if runtime == nil {
 		runtime = &programServiceDefaultRuntime{}
 	}
-	programServices := getProgramServices(runtime)
-	svc, ok := programServices[programServiceKey]
+	svc, ok := getProgramServices(runtime)[programServiceKey]
 	if !ok {
 		return nil, fmt.Errorf(
 			"invalid program service, want one in {%s}, got '%s'",

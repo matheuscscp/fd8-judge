@@ -16,7 +16,11 @@ func TestCompileAndExecute(t *testing.T) {
 	programFactory := &factories.ProgramFactory{}
 
 	var tests = map[string]struct {
-		programService, program, sourcePath, binaryPath, output string
+		programService string
+		program        string
+		sourcePath     string
+		binaryPath     string
+		output         string
 	}{
 		"c++11": {
 			programService: "c++11",
@@ -40,7 +44,7 @@ func TestCompileAndExecute(t *testing.T) {
 
 			cmd := svc.GetExecutionCommand(context.TODO(), test.sourcePath, test.binaryPath)
 
-			output, err := cmd.CombinedOutput()
+			output, err := cmd.Output()
 			assert.Equal(t, nil, err)
 			assert.Equal(t, []byte(test.output), output)
 

@@ -61,7 +61,7 @@ type (
 	ExecutorRuntime interface {
 	}
 
-	// ExecutorDefaultRuntime is the default runtime implementation for ExecutorRuntime.
+	// ExecutorDefaultRuntime is the default implementation of ExecutorRuntime.
 	ExecutorDefaultRuntime struct {
 	}
 )
