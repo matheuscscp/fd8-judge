@@ -62,31 +62,31 @@ func (mr *MockCageMockRecorder) Execute() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCage)(nil).Execute))
 }
 
-// MockRuntimeForCage is a mock of RuntimeForCage interface
-type MockRuntimeForCage struct {
+// MockDefaultCageRuntime is a mock of DefaultCageRuntime interface
+type MockDefaultCageRuntime struct {
 	ctrl     *gomock.Controller
-	recorder *MockRuntimeForCageMockRecorder
+	recorder *MockDefaultCageRuntimeMockRecorder
 }
 
-// MockRuntimeForCageMockRecorder is the mock recorder for MockRuntimeForCage
-type MockRuntimeForCageMockRecorder struct {
-	mock *MockRuntimeForCage
+// MockDefaultCageRuntimeMockRecorder is the mock recorder for MockDefaultCageRuntime
+type MockDefaultCageRuntimeMockRecorder struct {
+	mock *MockDefaultCageRuntime
 }
 
-// NewMockRuntimeForCage creates a new mock instance
-func NewMockRuntimeForCage(ctrl *gomock.Controller) *MockRuntimeForCage {
-	mock := &MockRuntimeForCage{ctrl: ctrl}
-	mock.recorder = &MockRuntimeForCageMockRecorder{mock}
+// NewMockDefaultCageRuntime creates a new mock instance
+func NewMockDefaultCageRuntime(ctrl *gomock.Controller) *MockDefaultCageRuntime {
+	mock := &MockDefaultCageRuntime{ctrl: ctrl}
+	mock.recorder = &MockDefaultCageRuntimeMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockRuntimeForCage) EXPECT() *MockRuntimeForCageMockRecorder {
+func (m *MockDefaultCageRuntime) EXPECT() *MockDefaultCageRuntimeMockRecorder {
 	return m.recorder
 }
 
 // Setrlimit mocks base method
-func (m *MockRuntimeForCage) Setrlimit(which int, lim *unix.Rlimit) error {
+func (m *MockDefaultCageRuntime) Setrlimit(which int, lim *unix.Rlimit) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Setrlimit", which, lim)
 	ret0, _ := ret[0].(error)
@@ -94,13 +94,13 @@ func (m *MockRuntimeForCage) Setrlimit(which int, lim *unix.Rlimit) error {
 }
 
 // Setrlimit indicates an expected call of Setrlimit
-func (mr *MockRuntimeForCageMockRecorder) Setrlimit(which, lim interface{}) *gomock.Call {
+func (mr *MockDefaultCageRuntimeMockRecorder) Setrlimit(which, lim interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setrlimit", reflect.TypeOf((*MockRuntimeForCage)(nil).Setrlimit), which, lim)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setrlimit", reflect.TypeOf((*MockDefaultCageRuntime)(nil).Setrlimit), which, lim)
 }
 
 // Exec mocks base method
-func (m *MockRuntimeForCage) Exec(argv0 string, argv, envv []string) error {
+func (m *MockDefaultCageRuntime) Exec(argv0 string, argv, envv []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Exec", argv0, argv, envv)
 	ret0, _ := ret[0].(error)
@@ -108,7 +108,7 @@ func (m *MockRuntimeForCage) Exec(argv0 string, argv, envv []string) error {
 }
 
 // Exec indicates an expected call of Exec
-func (mr *MockRuntimeForCageMockRecorder) Exec(argv0, argv, envv interface{}) *gomock.Call {
+func (mr *MockDefaultCageRuntimeMockRecorder) Exec(argv0, argv, envv interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockRuntimeForCage)(nil).Exec), argv0, argv, envv)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockDefaultCageRuntime)(nil).Exec), argv0, argv, envv)
 }

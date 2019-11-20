@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/matheuscscp/fd8-judge/pkg/cage"
+	"github.com/matheuscscp/fd8-judge/test/helpers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,7 +66,7 @@ func TestEncage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cmd := exec.Command("../../bin/fd8-judge", append([]string{"monster"}, test.cagedCommandFlags...)...)
 
-			cmd = cage.EnsureRuntime(test.cage, nil).Encage(cmd)
+			cmd = cage.New(test.cage, nil).Encage(cmd)
 			assert.Equal(t, os.Args[0], cmd.Path)
 			expectedArgs := []string{
 				filepath.Base(os.Args[0]),
@@ -88,9 +89,7 @@ func TestEncage(t *testing.T) {
 			}
 			assert.Equal(t, expectedArgs, cmd.Args)
 
-			// replacing results asserted above because they won't work in a test environment
-			cmd.Path = "../../bin/fd8-judge"
-			cmd.Args = append([]string{cmd.Path}, cmd.Args[1:]...)
+			helpers.ReplaceCagePathAndArgsForTesting("../..", cmd)
 
 			outputBytes, err := cmd.Output()
 			assert.Equal(t, test.returnsError, err != nil)

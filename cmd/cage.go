@@ -28,7 +28,7 @@ func defineCageCommand() {
 		Short: "Execute a process safely.",
 		Long:  "Execute a process in a minimally safe environment.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cage, err := parseCageFlags(cmd, cageFlags)
+			cage, err := parseCageFlags(cmd, cageFlags, "" /* flagPrefix */)
 			if err != nil {
 				return err
 			}
@@ -36,12 +36,17 @@ func defineCageCommand() {
 			return cage.Execute()
 		},
 	}
-	bindCageFlags(cageCmd, cageFlags, true /* bindExecFlags */)
+	bindCageFlags(
+		cageCmd,
+		cageFlags,
+		"",   // flagPrefix
+		true, // bindExecFlags
+	)
 	rootCmd.AddCommand(cageCmd)
 }
 
 // parseCageFlags parses the cage command flags.
-func parseCageFlags(cmd *cobra.Command, flags *cageFlags) (cage.Cage, error) {
+func parseCageFlags(cmd *cobra.Command, flags *cageFlags, flagPrefix string) (cage.Cage, error) {
 	if flags.execPath == "" {
 		return nil, fmt.Errorf("exec path not specified")
 	}
@@ -51,17 +56,17 @@ func parseCageFlags(cmd *cobra.Command, flags *cageFlags) (cage.Cage, error) {
 	}
 	cmd.Flags().Visit(func(flag *pflag.Flag) {
 		switch flag.Name {
-		case cage.TimeLimitFlag:
+		case flagPrefix + cage.TimeLimitFlag:
 			defaultCage.TimeLimit = &flags.timeLimit
 		}
 	})
-	return cage.EnsureRuntime(defaultCage, nil), nil
+	return cage.New(defaultCage, nil), nil
 }
 
 // bindCageFlags binds cage command flags.
-func bindCageFlags(cmd *cobra.Command, flags *cageFlags, bindExecFlags bool) {
+func bindCageFlags(cmd *cobra.Command, flags *cageFlags, flagPrefix string, bindExecFlags bool) {
 	cmd.Flags().DurationVar(
-		&flags.timeLimit, cage.TimeLimitFlag, time.Duration(0),
+		&flags.timeLimit, flagPrefix+cage.TimeLimitFlag, time.Duration(0),
 		"Maximum time duration for which the program can stay running. Follows go's time package syntax.",
 	)
 	if bindExecFlags {

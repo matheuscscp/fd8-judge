@@ -26,7 +26,14 @@ type (
 		uploadAuthorizedServerURL string
 		interactorProgramService  string
 		solutionProgramService    string
+		interactorCage            cageFlags
+		solutionCage              cageFlags
 	}
+)
+
+const (
+	executeCmdInteractorCageFlagPrefix = "interactor-cage-"
+	executeCmdSolutionCageFlagPrefix   = "solution-cage-"
 )
 
 // defineJudgeCommand defines the judge command and its subcommands.
@@ -44,7 +51,7 @@ func defineJudgeCommand() {
 		Short: "Execute a problem solution.",
 		Long:  "Execute a problem solution and store the outputs.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			executor, err := parseExecuteFlags(executeFlags)
+			executor, err := parseExecuteFlags(cmd, executeFlags)
 			if err != nil {
 				return err
 			}
@@ -57,7 +64,7 @@ func defineJudgeCommand() {
 }
 
 // parseExecuteFlags parses the judge execute command flags.
-func parseExecuteFlags(flags *executeFlags) (*judge.Executor, error) {
+func parseExecuteFlags(cmd *cobra.Command, flags *executeFlags) (*judge.Executor, error) {
 	bundleHeaders := make(http.Header)
 	if err := json.Unmarshal([]byte(flags.bundleRequestHeaders), &bundleHeaders); err != nil {
 		return nil, fmt.Errorf("error unmarshaling problem bundle request headers: %w", err)
@@ -90,6 +97,14 @@ func parseExecuteFlags(flags *executeFlags) (*judge.Executor, error) {
 	default:
 		return nil, fmt.Errorf("invalid interactor")
 	}
+	interactorCage, err := parseCageFlags(cmd, &flags.interactorCage, executeCmdInteractorCageFlagPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing interactor cage flags: %w", err)
+	}
+	solutionCage, err := parseCageFlags(cmd, &flags.solutionCage, executeCmdSolutionCageFlagPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing solution cage flags: %w", err)
+	}
 	return &judge.Executor{
 		BundleRequestURL:          flags.bundleRequestURL,
 		BundleRequestHeaders:      bundleHeaders,
@@ -101,6 +116,8 @@ func parseExecuteFlags(flags *executeFlags) (*judge.Executor, error) {
 		FileService:               services.NewFileService(nil),
 		InteractorProgramService:  interactorProgramService,
 		SolutionProgramService:    solutionProgramService,
+		InteractorCage:            interactorCage,
+		SolutionCage:              solutionCage,
 	}, nil
 }
 
@@ -140,4 +157,6 @@ func bindExecuteFlags(cmd *cobra.Command, flags *executeFlags) {
 		&flags.solutionProgramService, "solution-program-service", "",
 		fmt.Sprintf("Program service for solution. (one in {%s})", availableProgramServices),
 	)
+	bindCageFlags(cmd, &flags.interactorCage, executeCmdInteractorCageFlagPrefix, false /* bindExecFlags */)
+	bindCageFlags(cmd, &flags.solutionCage, executeCmdSolutionCageFlagPrefix, false /* bindExecFlags */)
 }

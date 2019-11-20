@@ -11,7 +11,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/matheuscscp/fd8-judge/pkg/cage"
-	mockCage "github.com/matheuscscp/fd8-judge/test/mocks/pkg/cage"
+	mockCage "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/cage"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sys/unix"
 )
@@ -19,7 +19,7 @@ import (
 func TestExecute(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockCage.MockRuntimeForCage
+	var mockRuntime *mockCage.MockDefaultCageRuntime
 
 	second := time.Second
 
@@ -54,12 +54,12 @@ func TestExecute(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockCage.NewMockRuntimeForCage(ctrl)
+			mockRuntime = mockCage.NewMockDefaultCageRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			cage := cage.EnsureRuntime(test.cage, mockRuntime)
+			cage := cage.New(test.cage, mockRuntime)
 			err := cage.Execute()
 			assert.Equal(t, test.err, err)
 		})

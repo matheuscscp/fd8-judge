@@ -14,7 +14,7 @@ import (
 	"github.com/matheuscscp/fd8-judge/pkg/services"
 	"github.com/matheuscscp/fd8-judge/test/fixtures"
 	"github.com/matheuscscp/fd8-judge/test/mocks"
-	mockServices "github.com/matheuscscp/fd8-judge/test/mocks/pkg/services"
+	mockServices "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/services"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

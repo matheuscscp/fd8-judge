@@ -15,30 +15,30 @@ GOCOVMERGE := go run github.com/wadey/gocovmerge
 # build and clean
 # ==================================================================================================
 
-ALL_GO_FILES := $(shell find . -name '*.go' | egrep -v 'test|vendor|tools')
+SOURCE_FILES := $(shell find . -name '*.go' | egrep -v 'test|vendor|tools')
 BUILD_TARGETS := bin/fd8-judge
 
 .PHONY: build
 build: $(BUILD_TARGETS)
 
-bin/fd8-judge: $(ALL_GO_FILES)
+bin/fd8-judge: $(SOURCE_FILES)
 	go build -o $@
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_TARGETS) bin/ cov/
+	rm -rf bin/ $(BUILD_TARGETS)
 
 # ==================================================================================================
 # gen and clean-gen (artifacts generation: mocks, protos...)
 # ==================================================================================================
 
 INTERFACES := `grep -rls ./pkg ./judge -e 'interface {$$'`
-MOCKS := $(shell echo $(INTERFACES) | sed 's/\.\//\.\/test\/mocks\//g')
+MOCKS := $(shell echo $(INTERFACES) | sed 's/\.\//\.\/test\/mocks\/gen\//g')
 
 .PHONY: gen
 gen: $(MOCKS)
 
-./test/mocks/%: ./%
+./test/mocks/gen/%: ./%
 	$(MOCKGEN) -source $< -package $$(basename $$(dirname "$<")) -destination $@
 
 .PHONY: clean-gen
@@ -51,6 +51,7 @@ clean-gen:
 
 TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|test|cmd|tools' | grep 'fd8-judge/'`
 COVERAGE_FILES := cov/unit.out cov/integration.out
+TEST_GARBAGE_FILES := judge/serverFiles/ judge/bundle/ judge/interactor* judge/solution* judge/outputs*
 
 .PHONY: fix
 fix:
@@ -65,12 +66,16 @@ lint:
 test: test-unit test-integration
 
 .PHONY: test-unit
-test-unit: cov
+test-unit: clean-test cov
 	go test $(TESTABLE_PACKAGES) -tags=unit -coverprofile cov/unit.out
 
 .PHONY: test-integration
-test-integration: cov bin/fd8-judge
+test-integration: clean-test cov bin/fd8-judge
 	go test $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out -p 1
+
+.PHONY: clean-test
+clean-test:
+	rm -rf cov/ $(TEST_GARBAGE_FILES)
 
 cov:
 	mkdir -p ./cov

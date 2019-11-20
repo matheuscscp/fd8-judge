@@ -34,11 +34,11 @@ type (
 		// ExecArgs are the arguments to be passed to unix.Exec() (through argument argv).
 		ExecArgs []string
 
-		runtime RuntimeForCage
+		runtime DefaultCageRuntime
 	}
 
-	// RuntimeForCage is the contract to supply for the default implementation of Cage.
-	RuntimeForCage interface {
+	// DefaultCageRuntime is the contract to supply for the default implementation of Cage.
+	DefaultCageRuntime interface {
 		// Setrlimit returns a call to unix.Setrlimit().
 		Setrlimit(which int, lim *unix.Rlimit) error
 
@@ -46,7 +46,7 @@ type (
 		Exec(argv0 string, argv []string, envv []string) error
 	}
 
-	// cageDefaultRuntime is the default implementation of RuntimeForCage.
+	// cageDefaultRuntime is the default implementation of DefaultCageRuntime.
 	cageDefaultRuntime struct {
 	}
 )
@@ -69,8 +69,11 @@ const (
 	ExecArgsFlag = "exec-args"
 )
 
-// EnsureRuntime assigns a runtime to a default Cage.
-func EnsureRuntime(cage *DefaultCage, runtime RuntimeForCage) Cage {
+// New instantiates a default cage and/or a default runtime and returns them.
+func New(cage *DefaultCage, runtime DefaultCageRuntime) Cage {
+	if cage == nil {
+		cage = &DefaultCage{}
+	}
 	if runtime == nil {
 		runtime = &cageDefaultRuntime{}
 	}

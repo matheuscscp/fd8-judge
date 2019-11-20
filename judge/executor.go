@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/matheuscscp/fd8-judge/pkg/cage"
 	"github.com/matheuscscp/fd8-judge/pkg/services"
 )
 
@@ -50,6 +51,12 @@ type (
 
 		// SolutionProgramService offers methods to compile and execute the solution.
 		SolutionProgramService services.ProgramService
+
+		// InteractorCage restricts the interactor process.
+		InteractorCage cage.Cage
+
+		// SolutionCage restricts the solution process.
+		SolutionCage cage.Cage
 
 		filePathInteractorSource string
 		filePathInteractorBinary string
@@ -189,6 +196,7 @@ func (e *Executor) runWithoutInteractor(testCase *testCaseFiles) error {
 	defer cancel()
 
 	solution := e.SolutionProgramService.GetExecutionCommand(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
+	solution = e.SolutionCage.Encage(solution)
 
 	input, err := e.FileService.OpenFile(testCase.input)
 	if err != nil {
@@ -250,6 +258,7 @@ func (e *Executor) runWithDefaultInteractor(testCase *testCaseFiles) error {
 	defer cancel()
 
 	solution := e.SolutionProgramService.GetExecutionCommand(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
+	solution = e.SolutionCage.Encage(solution)
 
 	input, err := e.FileService.OpenFile(testCase.input)
 	if err != nil {
@@ -329,7 +338,9 @@ func (e *Executor) runWithCustomInteractor(testCase *testCaseFiles) error {
 	defer cancel()
 
 	interactor := e.InteractorProgramService.GetExecutionCommand(ctx, e.filePathInteractorSource, e.filePathInteractorBinary)
+	interactor = e.InteractorCage.Encage(interactor)
 	solution := e.SolutionProgramService.GetExecutionCommand(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
+	solution = e.SolutionCage.Encage(solution)
 
 	output, err := e.FileService.CreateFile(testCase.output)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/matheuscscp/fd8-judge/pkg/services"
-	mockServices "github.com/matheuscscp/fd8-judge/test/mocks/pkg/services"
+	mockServices "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/services"
 	"github.com/stretchr/testify/assert"
 )
 

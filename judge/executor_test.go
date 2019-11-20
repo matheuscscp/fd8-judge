@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/matheuscscp/fd8-judge/judge"
+	"github.com/matheuscscp/fd8-judge/pkg/cage"
 	"github.com/matheuscscp/fd8-judge/pkg/services"
 	"github.com/matheuscscp/fd8-judge/test/factories"
 	"github.com/matheuscscp/fd8-judge/test/fixtures"
@@ -78,6 +79,7 @@ func TestExecute(t *testing.T) {
 			solutionProgramService, err := services.NewProgramService(test.solutionProgramService, nil)
 			assert.Equal(t, nil, err)
 
+			cage := &factories.Cage{TestCage: cage.New(nil, nil), RootPath: ".."}
 			executor := &judge.Executor{
 				BundleRequestURL:          fmt.Sprintf("http://localhost:%d/download?path=./serverFiles/bundle.tar.gz", port),
 				SolutionRequestURL:        fmt.Sprintf("http://localhost:%d/download?path=./serverFiles/solution", port),
@@ -87,6 +89,8 @@ func TestExecute(t *testing.T) {
 				FileService:               services.NewFileService(nil),
 				InteractorProgramService:  interactorProgramService,
 				SolutionProgramService:    solutionProgramService,
+				InteractorCage:            cage,
+				SolutionCage:              cage,
 			}
 			err = executor.Execute()
 			assert.Equal(t, nil, err)
