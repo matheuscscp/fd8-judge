@@ -23,7 +23,7 @@ func TestNewProgramServiceError(t *testing.T) {
 func TestCompileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockProgramServiceRuntime
+	var mockRuntime *mockServices.MockprogramServiceRuntime
 
 	type (
 		testInput struct {
@@ -50,7 +50,7 @@ func TestCompileError(t *testing.T) {
 				err: fmt.Errorf("error compiling for c++11: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().RunCommand(exec.CommandContext(context.TODO(), "g++", "-std=c++11", "", "-o", "")).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().Run(exec.CommandContext(context.TODO(), "g++", "-std=c++11", "", "-o", "")).Return(fmt.Errorf("error"))
 			},
 		},
 	}
@@ -59,7 +59,7 @@ func TestCompileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockProgramServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockprogramServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}

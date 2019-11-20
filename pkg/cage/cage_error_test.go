@@ -19,7 +19,7 @@ import (
 func TestExecute(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockCage.MockDefaultCageRuntime
+	var mockRuntime *mockCage.MockdefaultCageRuntime
 
 	second := time.Second
 
@@ -54,7 +54,7 @@ func TestExecute(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockCage.NewMockDefaultCageRuntime(ctrl)
+			mockRuntime = mockCage.NewMockdefaultCageRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}

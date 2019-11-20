@@ -40,9 +40,6 @@ type (
 		// compressed outputs of the problem solution.
 		UploadAuthorizedServerURL string
 
-		// Runtime offers the necessary standard operations for Executor.
-		Runtime ExecutorRuntime
-
 		// FileService offers the necessary file operations for Executor.
 		FileService services.FileService
 
@@ -62,14 +59,6 @@ type (
 		filePathInteractorBinary string
 		filePathSolutionSource   string
 		filePathSolutionBinary   string
-	}
-
-	// ExecutorRuntime is the contract to supply for Executor.
-	ExecutorRuntime interface {
-	}
-
-	// ExecutorDefaultRuntime is the default implementation of ExecutorRuntime.
-	ExecutorDefaultRuntime struct {
 	}
 )
 

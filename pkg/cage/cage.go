@@ -34,19 +34,14 @@ type (
 		// ExecArgs are the arguments to be passed to unix.Exec() (through argument argv).
 		ExecArgs []string
 
-		runtime DefaultCageRuntime
+		runtime defaultCageRuntime
 	}
 
-	// DefaultCageRuntime is the contract to supply for the default implementation of Cage.
-	DefaultCageRuntime interface {
-		// Setrlimit returns a call to unix.Setrlimit().
+	defaultCageRuntime interface {
 		Setrlimit(which int, lim *unix.Rlimit) error
-
-		// Exec returns a call to unix.Exec().
 		Exec(argv0 string, argv []string, envv []string) error
 	}
 
-	// cageDefaultRuntime is the default implementation of DefaultCageRuntime.
 	cageDefaultRuntime struct {
 	}
 )
@@ -70,7 +65,7 @@ const (
 )
 
 // New instantiates a default cage and/or a default runtime and returns them.
-func New(cage *DefaultCage, runtime DefaultCageRuntime) Cage {
+func New(cage *DefaultCage, runtime defaultCageRuntime) Cage {
 	if cage == nil {
 		cage = &DefaultCage{}
 	}
@@ -142,12 +137,10 @@ func (c *DefaultCage) exec() error {
 	return nil // never really happens, but go can't guess
 }
 
-// Setrlimit returns a call to unix.Setrlimit().
 func (*cageDefaultRuntime) Setrlimit(which int, lim *unix.Rlimit) error {
 	return unix.Setrlimit(which, lim)
 }
 
-// Exec returns a call to unix.Exec().
 func (*cageDefaultRuntime) Exec(argv0 string, argv []string, envv []string) error {
 	return unix.Exec(argv0, argv, envv)
 }

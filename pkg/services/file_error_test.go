@@ -23,7 +23,7 @@ import (
 func TestDownloadFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -46,7 +46,7 @@ func TestDownloadFileError(t *testing.T) {
 				err: fmt.Errorf("error building download request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"do-download-request-error": {
@@ -54,8 +54,8 @@ func TestDownloadFileError(t *testing.T) {
 				err: fmt.Errorf("error performing download request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
-				mockRuntime.EXPECT().DoRequest(nil).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(nil, nil)
+				mockRuntime.EXPECT().Do(nil).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"unexpected-status-in-download-response-error": {
@@ -63,8 +63,8 @@ func TestDownloadFileError(t *testing.T) {
 				err: fmt.Errorf("unexpected status in download response: status"),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
-				mockRuntime.EXPECT().DoRequest(nil).Return(&http.Response{
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(nil, nil)
+				mockRuntime.EXPECT().Do(nil).Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
 					Body:       &fixtures.NopReadCloser{},
@@ -76,12 +76,12 @@ func TestDownloadFileError(t *testing.T) {
 				err: fmt.Errorf("error creating file for download data: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
-				mockRuntime.EXPECT().DoRequest(nil).Return(&http.Response{
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(nil, nil)
+				mockRuntime.EXPECT().Do(nil).Return(&http.Response{
 					StatusCode: 200,
 					Body:       &fixtures.NopReadCloser{},
 				}, nil)
-				mockRuntime.EXPECT().CreateFile("").Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Create("").Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"transfer-and-store-download-data-error": {
@@ -89,12 +89,12 @@ func TestDownloadFileError(t *testing.T) {
 				err: fmt.Errorf("error reading and writing download data: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, nil)
-				mockRuntime.EXPECT().DoRequest(nil).Return(&http.Response{
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(nil, nil)
+				mockRuntime.EXPECT().Do(nil).Return(&http.Response{
 					StatusCode: 200,
 					Body:       &fixtures.NopReadCloser{},
 				}, nil)
-				mockRuntime.EXPECT().CreateFile("").Return(&fixtures.NopWriteCloser{}, nil)
+				mockRuntime.EXPECT().Create("").Return(&fixtures.NopWriteCloser{}, nil)
 				mockRuntime.EXPECT().Copy(&fixtures.NopWriteCloser{}, &fixtures.NopReadCloser{}).Return(int64(0), fmt.Errorf("error"))
 			},
 		},
@@ -104,7 +104,7 @@ func TestDownloadFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -122,7 +122,7 @@ func TestDownloadFileError(t *testing.T) {
 func TestRequestUploadInfoError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -144,7 +144,7 @@ func TestRequestUploadInfoError(t *testing.T) {
 				err: fmt.Errorf("error creating upload info request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"request-upload-info-error": {
@@ -152,10 +152,10 @@ func TestRequestUploadInfoError(t *testing.T) {
 				err: fmt.Errorf("error requesting upload info: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(&http.Request{
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(&http.Request{
 					Header: make(http.Header),
 				}, nil)
-				mockRuntime.EXPECT().DoRequest(&http.Request{
+				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
 						"X-Content-Length": []string{"0"},
 					},
@@ -167,10 +167,10 @@ func TestRequestUploadInfoError(t *testing.T) {
 				err: fmt.Errorf("unexpected status in upload info response: status"),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(&http.Request{
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(&http.Request{
 					Header: make(http.Header),
 				}, nil)
-				mockRuntime.EXPECT().DoRequest(&http.Request{
+				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
 						"X-Content-Length": []string{"0"},
 					},
@@ -186,10 +186,10 @@ func TestRequestUploadInfoError(t *testing.T) {
 				err: fmt.Errorf("error decoding upload info: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().NewHTTPRequest(http.MethodGet, "", nil).Return(&http.Request{
+				mockRuntime.EXPECT().NewRequest(http.MethodGet, "", nil).Return(&http.Request{
 					Header: make(http.Header),
 				}, nil)
-				mockRuntime.EXPECT().DoRequest(&http.Request{
+				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
 						"X-Content-Length": []string{"0"},
 					},
@@ -207,7 +207,7 @@ func TestRequestUploadInfoError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -225,7 +225,7 @@ func TestRequestUploadInfoError(t *testing.T) {
 func TestUploadFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -246,7 +246,7 @@ func TestUploadFileError(t *testing.T) {
 				err: fmt.Errorf("error opening upload file: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open("").Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"build-upload-request-error": {
@@ -257,8 +257,8 @@ func TestUploadFileError(t *testing.T) {
 				err: fmt.Errorf("error building upload request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().NewHTTPRequest("", "", &fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewRequest("", "", &fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"do-upload-request-error": {
@@ -269,9 +269,9 @@ func TestUploadFileError(t *testing.T) {
 				err: fmt.Errorf("error performing upload request: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().NewHTTPRequest("", "", &fixtures.NopReadCloser{}).Return(&http.Request{}, nil)
-				mockRuntime.EXPECT().DoRequest(&http.Request{}).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewRequest("", "", &fixtures.NopReadCloser{}).Return(&http.Request{}, nil)
+				mockRuntime.EXPECT().Do(&http.Request{}).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"unexpected-status-in-upload-response-error": {
@@ -282,9 +282,9 @@ func TestUploadFileError(t *testing.T) {
 				err: fmt.Errorf("unexpected status in upload response: status"),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().NewHTTPRequest("", "", &fixtures.NopReadCloser{}).Return(&http.Request{}, nil)
-				mockRuntime.EXPECT().DoRequest(&http.Request{}).Return(&http.Response{
+				mockRuntime.EXPECT().Open("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewRequest("", "", &fixtures.NopReadCloser{}).Return(&http.Request{}, nil)
+				mockRuntime.EXPECT().Do(&http.Request{}).Return(&http.Response{
 					StatusCode: 201,
 					Status:     "status",
 					Body:       &fixtures.NopReadCloser{},
@@ -297,7 +297,7 @@ func TestUploadFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -314,7 +314,7 @@ func TestUploadFileError(t *testing.T) {
 func TestCompressError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -336,7 +336,7 @@ func TestCompressError(t *testing.T) {
 			},
 			mocks: func() {
 				outputRelativePath := filepath.Clean("")
-				mockRuntime.EXPECT().CreateFile(outputRelativePath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Create(outputRelativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
 	}
@@ -345,7 +345,7 @@ func TestCompressError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -362,7 +362,7 @@ func TestCompressError(t *testing.T) {
 func TestVisitNodeForCompressionError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -397,7 +397,7 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 				err: fmt.Errorf("error creating compression header: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().FileInfoHeader(&mocks.MockFileInfo{}, "").Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"write-compression-header-error": {
@@ -409,8 +409,8 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
-				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
-				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().FileInfoHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().WriteHeader(nil, &tar.Header{Name: name}).Return(fmt.Errorf("error"))
 			},
 		},
 		"open-input-file-for-compression-error": {
@@ -422,9 +422,9 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
-				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
-				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(nil)
-				mockRuntime.EXPECT().OpenFile("").Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().FileInfoHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().WriteHeader(nil, &tar.Header{Name: name}).Return(nil)
+				mockRuntime.EXPECT().Open("").Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"write-input-file-for-compression-error": {
@@ -436,9 +436,9 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 			},
 			mocks: func() {
 				name := filepath.ToSlash("")
-				mockRuntime.EXPECT().CreateCompressionHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
-				mockRuntime.EXPECT().WriteCompressionHeader(nil, &tar.Header{Name: name}).Return(nil)
-				mockRuntime.EXPECT().OpenFile("").Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().FileInfoHeader(&mocks.MockFileInfo{}, "").Return(&tar.Header{Name: name}, nil)
+				mockRuntime.EXPECT().WriteHeader(nil, &tar.Header{Name: name}).Return(nil)
+				mockRuntime.EXPECT().Open("").Return(&fixtures.NopReadCloser{}, nil)
 				mockRuntime.EXPECT().Copy(nil, &fixtures.NopReadCloser{}).Return(int64(0), fmt.Errorf("error"))
 			},
 		},
@@ -448,7 +448,7 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -479,7 +479,7 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 func TestUncompressError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -501,7 +501,7 @@ func TestUncompressError(t *testing.T) {
 			},
 			mocks: func() {
 				inputRelativePath := filepath.Clean("")
-				mockRuntime.EXPECT().OpenFile(inputRelativePath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open(inputRelativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"create-compression-reader-error": {
@@ -510,8 +510,8 @@ func TestUncompressError(t *testing.T) {
 			},
 			mocks: func() {
 				inputRelativePath := filepath.Clean("")
-				mockRuntime.EXPECT().OpenFile(inputRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open(inputRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(nil, fmt.Errorf("error"))
 			},
 		},
 		"create-root-path-error": {
@@ -523,9 +523,9 @@ func TestUncompressError(t *testing.T) {
 			},
 			mocks: func() {
 				inputRelativePath := filepath.Clean("")
-				mockRuntime.EXPECT().OpenFile(inputRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateFolder("nonDotRootPath").Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open(inputRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().MkdirAll("nonDotRootPath").Return(fmt.Errorf("error"))
 			},
 		},
 		"read-compression-header-error": {
@@ -535,10 +535,10 @@ func TestUncompressError(t *testing.T) {
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
 				inTar := tar.NewReader(&fixtures.NopReadCloser{})
-				mockRuntime.EXPECT().OpenFile(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().ReadCompressionHeader(inTar).Return(nil, fmt.Errorf("error"))
-				mockRuntime.EXPECT().RemoveFileTree(inOutRelativePath)
+				mockRuntime.EXPECT().Open(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().Next(inTar).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().RemoveAll(inOutRelativePath)
 			},
 		},
 		"invalid-compression-header-name-error": {
@@ -548,10 +548,10 @@ func TestUncompressError(t *testing.T) {
 			mocks: func() {
 				inOutRelativePath := filepath.Clean("")
 				inTar := tar.NewReader(&fixtures.NopReadCloser{})
-				mockRuntime.EXPECT().OpenFile(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().ReadCompressionHeader(inTar).Return(&tar.Header{Name: "/"}, nil)
-				mockRuntime.EXPECT().RemoveFileTree(inOutRelativePath)
+				mockRuntime.EXPECT().Open(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().Next(inTar).Return(&tar.Header{Name: "/"}, nil)
+				mockRuntime.EXPECT().RemoveAll(inOutRelativePath)
 			},
 		},
 		"create-folder-for-uncompression-error": {
@@ -562,14 +562,14 @@ func TestUncompressError(t *testing.T) {
 				inOutRelativePath := filepath.Clean("")
 				inTar := tar.NewReader(&fixtures.NopReadCloser{})
 				curPath := filepath.Join(inOutRelativePath, "name")
-				mockRuntime.EXPECT().OpenFile(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().ReadCompressionHeader(inTar).Return(&tar.Header{
+				mockRuntime.EXPECT().Open(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().Next(inTar).Return(&tar.Header{
 					Name:     "name",
 					Typeflag: tar.TypeDir,
 				}, nil)
-				mockRuntime.EXPECT().CreateFolder(curPath).Return(fmt.Errorf("error"))
-				mockRuntime.EXPECT().RemoveFileTree(inOutRelativePath)
+				mockRuntime.EXPECT().MkdirAll(curPath).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().RemoveAll(inOutRelativePath)
 			},
 		},
 		"create-file-for-uncompression-error": {
@@ -580,14 +580,14 @@ func TestUncompressError(t *testing.T) {
 				inOutRelativePath := filepath.Clean("")
 				inTar := tar.NewReader(&fixtures.NopReadCloser{})
 				curPath := filepath.Join(inOutRelativePath, "name")
-				mockRuntime.EXPECT().OpenFile(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().ReadCompressionHeader(inTar).Return(&tar.Header{
+				mockRuntime.EXPECT().Open(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().Next(inTar).Return(&tar.Header{
 					Name:     "name",
 					Typeflag: tar.TypeReg,
 				}, nil)
-				mockRuntime.EXPECT().CreateFile(curPath).Return(nil, fmt.Errorf("error"))
-				mockRuntime.EXPECT().RemoveFileTree(inOutRelativePath)
+				mockRuntime.EXPECT().Create(curPath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().RemoveAll(inOutRelativePath)
 			},
 		},
 		"write-output-file-for-uncompression-error": {
@@ -598,15 +598,15 @@ func TestUncompressError(t *testing.T) {
 				inOutRelativePath := filepath.Clean("")
 				inTar := tar.NewReader(&fixtures.NopReadCloser{})
 				curPath := filepath.Join(inOutRelativePath, "name")
-				mockRuntime.EXPECT().OpenFile(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().CreateCompressionReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
-				mockRuntime.EXPECT().ReadCompressionHeader(inTar).Return(&tar.Header{
+				mockRuntime.EXPECT().Open(inOutRelativePath).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().NewReader(&fixtures.NopReadCloser{}).Return(&fixtures.NopReadCloser{}, nil)
+				mockRuntime.EXPECT().Next(inTar).Return(&tar.Header{
 					Name:     "name",
 					Typeflag: tar.TypeReg,
 				}, nil)
-				mockRuntime.EXPECT().CreateFile(curPath).Return(&fixtures.NopWriteCloser{}, nil)
+				mockRuntime.EXPECT().Create(curPath).Return(&fixtures.NopWriteCloser{}, nil)
 				mockRuntime.EXPECT().Copy(&fixtures.NopWriteCloser{}, inTar).Return(int64(0), fmt.Errorf("error"))
-				mockRuntime.EXPECT().RemoveFileTree(inOutRelativePath)
+				mockRuntime.EXPECT().RemoveAll(inOutRelativePath)
 			},
 		},
 	}
@@ -615,7 +615,7 @@ func TestUncompressError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -632,7 +632,7 @@ func TestUncompressError(t *testing.T) {
 func TestRemoveFileTreeError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -653,7 +653,7 @@ func TestRemoveFileTreeError(t *testing.T) {
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
-				mockRuntime.EXPECT().RemoveFileTree(relativePath).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().RemoveAll(relativePath).Return(fmt.Errorf("error"))
 			},
 		},
 	}
@@ -662,7 +662,7 @@ func TestRemoveFileTreeError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -679,7 +679,7 @@ func TestRemoveFileTreeError(t *testing.T) {
 func TestOpenFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -701,7 +701,7 @@ func TestOpenFileError(t *testing.T) {
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
-				mockRuntime.EXPECT().OpenFile(relativePath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Open(relativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
 	}
@@ -710,7 +710,7 @@ func TestOpenFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -728,7 +728,7 @@ func TestOpenFileError(t *testing.T) {
 func TestCreateFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -753,7 +753,7 @@ func TestCreateFileError(t *testing.T) {
 			},
 			mocks: func() {
 				folderPath := filepath.Dir(filepath.Clean("./folder/file.txt"))
-				mockRuntime.EXPECT().CreateFolder(folderPath).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().MkdirAll(folderPath).Return(fmt.Errorf("error"))
 			},
 		},
 		"create-file-error": {
@@ -762,7 +762,7 @@ func TestCreateFileError(t *testing.T) {
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
-				mockRuntime.EXPECT().CreateFile(relativePath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Create(relativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
 	}
@@ -771,7 +771,7 @@ func TestCreateFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -789,7 +789,7 @@ func TestCreateFileError(t *testing.T) {
 func TestListFilesError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -811,7 +811,7 @@ func TestListFilesError(t *testing.T) {
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
-				mockRuntime.EXPECT().ReadFolder(relativePath).Return(nil, fmt.Errorf("no such file or directory"))
+				mockRuntime.EXPECT().ReadDir(relativePath).Return(nil, fmt.Errorf("no such file or directory"))
 			},
 		},
 		"read-folder-error": {
@@ -820,7 +820,7 @@ func TestListFilesError(t *testing.T) {
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
-				mockRuntime.EXPECT().ReadFolder(relativePath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().ReadDir(relativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
 	}
@@ -829,7 +829,7 @@ func TestListFilesError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
@@ -847,7 +847,7 @@ func TestListFilesError(t *testing.T) {
 func TestGetFileSizeError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockFileServiceRuntime
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
 
 	type (
 		testInput struct {
@@ -869,7 +869,7 @@ func TestGetFileSizeError(t *testing.T) {
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
-				mockRuntime.EXPECT().GetFileInfo(relativePath).Return(nil, fmt.Errorf("error"))
+				mockRuntime.EXPECT().Stat(relativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
 	}
@@ -878,7 +878,7 @@ func TestGetFileSizeError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockFileServiceRuntime(ctrl)
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}

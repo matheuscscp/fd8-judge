@@ -23,25 +23,22 @@ type (
 		GetBinaryFileExtension() string
 	}
 
-	// ProgramServiceRuntime is the contract to supply for the implementations of ProgramService.
-	ProgramServiceRuntime interface {
-		// RunCommand runs a command.
-		RunCommand(cmd *exec.Cmd) error
+	programServiceRuntime interface {
+		Run(cmd *exec.Cmd) error
 	}
 
-	// programServiceDefaultRuntime is the default implementation of ProgramServiceRuntime.
 	programServiceDefaultRuntime struct {
 	}
 
 	// cpp11ProgramService implements compilation and execution for C++ 11.
 	cpp11ProgramService struct {
-		runtime ProgramServiceRuntime
+		runtime programServiceRuntime
 	}
 )
 
 // NewProgramService creates a ProgramService according to the given key.
-// If nil is passed, the ProgramService will be created with the default ProgramServiceRuntime.
-func NewProgramService(programServiceKey string, runtime ProgramServiceRuntime) (ProgramService, error) {
+// If nil is passed, the ProgramService will be created with the default programServiceRuntime.
+func NewProgramService(programServiceKey string, runtime programServiceRuntime) (ProgramService, error) {
 	if runtime == nil {
 		runtime = &programServiceDefaultRuntime{}
 	}
@@ -67,37 +64,32 @@ func GetProgramServices() []string {
 }
 
 // getProgramServices returns the available program services.
-func getProgramServices(runtime ProgramServiceRuntime) map[string]ProgramService {
+func getProgramServices(runtime programServiceRuntime) map[string]ProgramService {
 	return map[string]ProgramService{
 		"c++11": &cpp11ProgramService{runtime: runtime},
 	}
 }
 
-// RunCommand runs a command.
-func (*programServiceDefaultRuntime) RunCommand(cmd *exec.Cmd) error {
+func (*programServiceDefaultRuntime) Run(cmd *exec.Cmd) error {
 	return cmd.Run()
 }
 
-// Compile compiles a source code file to a binary file.
 func (p *cpp11ProgramService) Compile(ctx context.Context, sourceRelativePath, binaryRelativePath string) error {
 	cmd := exec.CommandContext(ctx, "g++", "-std=c++11", sourceRelativePath, "-o", binaryRelativePath)
-	if err := p.runtime.RunCommand(cmd); err != nil {
+	if err := p.runtime.Run(cmd); err != nil {
 		return fmt.Errorf("error compiling for c++11: %w", err)
 	}
 	return nil
 }
 
-// GetExecutionCommand returns an *exec.Cmd to execute the given program.
 func (*cpp11ProgramService) GetExecutionCommand(ctx context.Context, sourceRelativePath, binaryRelativePath string) *exec.Cmd {
 	return exec.CommandContext(ctx, binaryRelativePath)
 }
 
-// GetSourceFileExtension returns the extension for source code files names.
 func (*cpp11ProgramService) GetSourceFileExtension() string {
 	return ".cpp"
 }
 
-// GetBinaryFileExtension returns the extension for binary executable file names.
 func (*cpp11ProgramService) GetBinaryFileExtension() string {
 	return ""
 }

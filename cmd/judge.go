@@ -112,7 +112,6 @@ func parseExecuteFlags(cmd *cobra.Command, flags *executeFlags) (*judge.Executor
 		SolutionRequestHeaders:    solutionHeaders,
 		Interactor:                flags.interactor,
 		UploadAuthorizedServerURL: flags.uploadAuthorizedServerURL,
-		Runtime:                   &judge.ExecutorDefaultRuntime{},
 		FileService:               services.NewFileService(nil),
 		InteractorProgramService:  interactorProgramService,
 		SolutionProgramService:    solutionProgramService,
