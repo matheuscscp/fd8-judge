@@ -21,7 +21,7 @@ type Cage struct {
 // Encage fixes command's path and args hijacked by TestCage.Encage().
 func (c *Cage) Encage(monster *exec.Cmd) *exec.Cmd {
 	cmd := c.TestCage.Encage(monster)
-	helpers.ReplaceCagePathAndArgsForTesting(c.RootPath, cmd)
+	helpers.ReplaceCageCommandPathAndArgs(c.RootPath, cmd)
 	return cmd
 }
 

@@ -89,7 +89,7 @@ func TestEncage(t *testing.T) {
 			}
 			assert.Equal(t, expectedArgs, cmd.Args)
 
-			helpers.ReplaceCagePathAndArgsForTesting("../..", cmd)
+			helpers.ReplaceCageCommandPathAndArgs("../.." /* path to root */, cmd)
 
 			outputBytes, err := cmd.Output()
 			assert.Equal(t, test.returnsError, err != nil)

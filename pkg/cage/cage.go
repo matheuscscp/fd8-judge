@@ -104,14 +104,19 @@ func (c *DefaultCage) Encage(monster *exec.Cmd) *exec.Cmd {
 
 // Execute installs the restrictions in the current process and then does the actual unix.Exec().
 func (c *DefaultCage) Execute() error {
-	if err := c.restrict(); err != nil {
+	if err := c.restrictTimeLimit(); err != nil {
 		return err
 	}
-	return c.exec()
+
+	if err := c.runtime.Exec(c.ExecPath, c.ExecArgs, nil); err != nil {
+		return fmt.Errorf("error in exec syscall: %w", err)
+	}
+	return nil // never really happens, but go can't guess
 }
 
-// restrict installs the restrictions in the current process.
-func (c *DefaultCage) restrict() error {
+// restrictTimeLimit enforces the time limit option, setting the maximum amount of time the process
+// will be allowed to stay in the CPU.
+func (c *DefaultCage) restrictTimeLimit() error {
 	if c.TimeLimit != nil {
 		timeLimitSeconds := uint64(c.TimeLimit.Seconds())
 		if timeLimitSeconds == 0 {
@@ -125,16 +130,7 @@ func (c *DefaultCage) restrict() error {
 			return fmt.Errorf("error restricting time limit: %w", err)
 		}
 	}
-
 	return nil
-}
-
-// exec does the actual unix.Exec() (aka execve(2)).
-func (c *DefaultCage) exec() error {
-	if err := c.runtime.Exec(c.ExecPath, c.ExecArgs, os.Environ()); err != nil {
-		return fmt.Errorf("error exec()ing command: %w", err)
-	}
-	return nil // never really happens, but go can't guess
 }
 
 func (*cageDefaultRuntime) Setrlimit(which int, lim *unix.Rlimit) error {

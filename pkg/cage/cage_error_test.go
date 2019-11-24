@@ -3,7 +3,6 @@
 package cage_test
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -42,9 +41,9 @@ func TestExecute(t *testing.T) {
 		},
 		"exec-error": {
 			cage: &cage.DefaultCage{},
-			err:  fmt.Errorf("error exec()ing command: %w", fmt.Errorf("error")),
+			err:  fmt.Errorf("error in exec syscall: %w", fmt.Errorf("error")),
 			mocks: func() {
-				mockRuntime.EXPECT().Exec("", nil, os.Environ()).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().Exec("", nil, nil).Return(fmt.Errorf("error"))
 			},
 		},
 	}
