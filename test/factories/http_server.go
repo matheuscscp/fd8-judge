@@ -34,19 +34,8 @@ func (f *HTTPServerFactory) NewDummy() (net.Listener, *http.Server, error) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		const payload = "PAYLOAD"
-		const bytesToBeWritten = len(payload)
-		w.Header().Add("Content-Length", fmt.Sprintf("%d", bytesToBeWritten))
-		bytesWritten, err := w.Write([]byte(payload))
-		if err != nil {
+		if _, err := w.Write([]byte("PAYLOAD")); err != nil {
 			panic(fmt.Errorf("error writing dummy HTTP server response: %w", err))
-		}
-		if bytesWritten != bytesToBeWritten {
-			panic(fmt.Errorf(
-				"wrong number of bytes written by dummy HTTP server, want %d, got %d",
-				bytesToBeWritten,
-				bytesWritten,
-			))
 		}
 	})
 
@@ -90,18 +79,8 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 		if err != nil {
 			panic(fmt.Errorf("error marshaling dummy upload HTTP server response: %w", err))
 		}
-		bytesToBeWritten := len(payload)
-		w.Header().Add("Content-Length", fmt.Sprintf("%d", bytesToBeWritten))
-		bytesWritten, err := w.Write(payload)
-		if err != nil {
+		if _, err := w.Write(payload); err != nil {
 			panic(fmt.Errorf("error writing dummy upload HTTP server response: %w", err))
-		}
-		if bytesWritten != bytesToBeWritten {
-			panic(fmt.Errorf(
-				"wrong number of bytes written by dummy upload HTTP server, want %d, got %d",
-				bytesToBeWritten,
-				bytesWritten,
-			))
 		}
 	})
 	var uploadedData []byte
@@ -114,18 +93,8 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 			}
 			w.WriteHeader(http.StatusOK)
 		} else if r.Method == http.MethodGet {
-			bytesToBeWritten := len(uploadedData)
-			w.Header().Add("Content-Length", fmt.Sprintf("%d", bytesToBeWritten))
-			bytesWritten, err := w.Write(uploadedData)
-			if err != nil {
+			if _, err := w.Write(uploadedData); err != nil {
 				panic(fmt.Errorf("error writing upload: %w", err))
-			}
-			if bytesWritten != bytesToBeWritten {
-				panic(fmt.Errorf(
-					"wrong number of bytes written by dummy upload HTTP server, want %d, got %d",
-					bytesToBeWritten,
-					bytesWritten,
-				))
 			}
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -178,18 +147,8 @@ func (f *HTTPServerFactory) NewFileServer(relativePath string) (net.Listener, *h
 			if err != nil {
 				panic(fmt.Errorf("error marshaling file server upload info response: %w", err))
 			}
-			bytesToBeWritten := len(payload)
-			w.Header().Add("Content-Length", fmt.Sprintf("%d", bytesToBeWritten))
-			bytesWritten, err := w.Write(payload)
-			if err != nil {
+			if _, err := w.Write(payload); err != nil {
 				panic(fmt.Errorf("error writing file server upload info response: %w", err))
-			}
-			if bytesWritten != bytesToBeWritten {
-				panic(fmt.Errorf(
-					"wrong number of bytes written by file server, want %d, got %d",
-					bytesToBeWritten,
-					bytesWritten,
-				))
 			}
 		case http.MethodPut:
 			file, err := os.Create(r.URL.Query()["path"][0])
