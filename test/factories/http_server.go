@@ -83,7 +83,7 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 			Method: http.MethodPut,
 			URL:    fmt.Sprintf("http://localhost:%d/upload", port),
 			Headers: http.Header{
-				"Content-Length": []string{r.Header.Get("X-Content-Length")},
+				"Content-Length": []string{r.Header.Get("X-File-Size")},
 			},
 		}
 		payload, err := json.Marshal(uploadInfo)

@@ -15,9 +15,13 @@ import (
 )
 
 const (
+	// FileUploadNameHeader is the header sent to the authorized server when requesting the one-time
+	// authorized upload request.
+	FileUploadNameHeader = "X-File-Name"
+
 	// FileUploadSizeHeader is the header sent to the authorized server when requesting the one-time
-	// upload request.
-	FileUploadSizeHeader = "X-Content-Length"
+	// authorized upload request.
+	FileUploadSizeHeader = "X-File-Size"
 )
 
 type (
@@ -27,8 +31,10 @@ type (
 		// bytes written.
 		DownloadFile(relativePath, url string, headers http.Header) (int64, error)
 
-		// UploadFile uploads a file first requesting a one-time upload request to an authorized server.
-		// FileUploadSizeHeader is sent with the file size when requesting the one-time request.
+		// UploadFile uploads a file first requesting a one-time authorized upload request to an
+		// authorized server.
+		// FileUploadNameHeader and FileUploadSizeHeader are sent with the file name and size when
+		// requesting the one-time authorized request.
 		UploadFile(relativePath string, authorizedServerURL string) error
 
 		// Compress compresses a file or a folder into a .tar.gz file.
@@ -126,8 +132,10 @@ func (f *defaultFileService) DownloadFile(relativePath, url string, headers http
 	return bytes, nil
 }
 
-// UploadFile uploads a file first requesting a one-time upload request to an authorized server.
-// FileUploadSizeHeader is sent with the file size when requesting the one-time request.
+// UploadFile uploads a file first requesting a one-time authorized upload request to an
+// authorized server.
+// FileUploadNameHeader and FileUploadSizeHeader are sent with the file name and size when
+// requesting the one-time authorized request.
 func (f *defaultFileService) UploadFile(relativePath string, authorizedServerURL string) error {
 	relativePath = filepath.Clean(relativePath)
 
@@ -137,11 +145,12 @@ func (f *defaultFileService) UploadFile(relativePath string, authorizedServerURL
 		return fmt.Errorf("error getting file infos to get size: %w", err)
 	}
 
-	// request one-time upload request
+	// request one-time authorized upload request
 	req, err := f.runtime.NewRequest(http.MethodGet, authorizedServerURL, nil)
 	if err != nil {
 		return fmt.Errorf("error creating upload info request: %w", err)
 	}
+	req.Header.Add(FileUploadNameHeader, filepath.Base(relativePath))
 	req.Header.Add(FileUploadSizeHeader, fmt.Sprintf("%v", fileInfo.Size()))
 	resp, err := f.runtime.Do(req)
 	if err != nil {

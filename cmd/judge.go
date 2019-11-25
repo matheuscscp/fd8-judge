@@ -146,7 +146,7 @@ func bindExecuteFlags(cmd *cobra.Command, flags *executeFlags) {
 	)
 	cmd.Flags().StringVar(
 		&flags.uploadAuthorizedServerURL, "upload-authorized-server-url", "",
-		"HTTP GET endpoint expecting an X-Content-Length header parameter to return an authorized upload request.",
+		"HTTP endpoint to GET an one-time authorized upload request.",
 	)
 	cmd.Flags().StringVar(
 		&flags.interactorProgramService, "interactor-program-service", "",
