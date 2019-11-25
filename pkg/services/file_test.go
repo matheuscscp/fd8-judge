@@ -36,7 +36,9 @@ func TestDownloadFile(t *testing.T) {
 	bytesDownloaded, err := fileSvc.DownloadFile(
 		relativePath,
 		fmt.Sprintf("http://localhost:%d/dummy", port),
-		nil,
+		http.Header{
+			"signed-header": []string{"signed-header-value"},
+		},
 	)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, bytesToBeDownloaded, bytesDownloaded)
