@@ -7,7 +7,6 @@ package services
 import (
 	tar "archive/tar"
 	gomock "github.com/golang/mock/gomock"
-	services "github.com/matheuscscp/fd8-judge/pkg/services"
 	io "io"
 	http "net/http"
 	os "os"
@@ -53,33 +52,18 @@ func (mr *MockFileServiceMockRecorder) DownloadFile(relativePath, url, headers i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFile", reflect.TypeOf((*MockFileService)(nil).DownloadFile), relativePath, url, headers)
 }
 
-// RequestUploadInfo mocks base method
-func (m *MockFileService) RequestUploadInfo(authorizedServerURL string, fileSize int) (*services.FileUploadInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RequestUploadInfo", authorizedServerURL, fileSize)
-	ret0, _ := ret[0].(*services.FileUploadInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RequestUploadInfo indicates an expected call of RequestUploadInfo
-func (mr *MockFileServiceMockRecorder) RequestUploadInfo(authorizedServerURL, fileSize interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestUploadInfo", reflect.TypeOf((*MockFileService)(nil).RequestUploadInfo), authorizedServerURL, fileSize)
-}
-
 // UploadFile mocks base method
-func (m *MockFileService) UploadFile(relativePath string, uploadInfo *services.FileUploadInfo) error {
+func (m *MockFileService) UploadFile(relativePath, authorizedServerURL string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UploadFile", relativePath, uploadInfo)
+	ret := m.ctrl.Call(m, "UploadFile", relativePath, authorizedServerURL)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UploadFile indicates an expected call of UploadFile
-func (mr *MockFileServiceMockRecorder) UploadFile(relativePath, uploadInfo interface{}) *gomock.Call {
+func (mr *MockFileServiceMockRecorder) UploadFile(relativePath, authorizedServerURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadFile", reflect.TypeOf((*MockFileService)(nil).UploadFile), relativePath, uploadInfo)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadFile", reflect.TypeOf((*MockFileService)(nil).UploadFile), relativePath, authorizedServerURL)
 }
 
 // Compress mocks base method
@@ -169,21 +153,6 @@ func (mr *MockFileServiceMockRecorder) ListFiles(relativePath interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFiles", reflect.TypeOf((*MockFileService)(nil).ListFiles), relativePath)
 }
 
-// GetFileSize mocks base method
-func (m *MockFileService) GetFileSize(relativePath string) (int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFileSize", relativePath)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetFileSize indicates an expected call of GetFileSize
-func (mr *MockFileServiceMockRecorder) GetFileSize(relativePath interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileSize", reflect.TypeOf((*MockFileService)(nil).GetFileSize), relativePath)
-}
-
 // MockdefaultFileServiceRuntime is a mock of defaultFileServiceRuntime interface
 type MockdefaultFileServiceRuntime struct {
 	ctrl     *gomock.Controller
@@ -267,19 +236,18 @@ func (mr *MockdefaultFileServiceRuntimeMockRecorder) Copy(dst, src interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Copy", reflect.TypeOf((*MockdefaultFileServiceRuntime)(nil).Copy), dst, src)
 }
 
-// DecodeUploadInfo mocks base method
-func (m *MockdefaultFileServiceRuntime) DecodeUploadInfo(r io.Reader) (*services.FileUploadInfo, error) {
+// NewDecoderDecode mocks base method
+func (m *MockdefaultFileServiceRuntime) NewDecoderDecode(r io.Reader, v interface{}) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DecodeUploadInfo", r)
-	ret0, _ := ret[0].(*services.FileUploadInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "NewDecoderDecode", r, v)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// DecodeUploadInfo indicates an expected call of DecodeUploadInfo
-func (mr *MockdefaultFileServiceRuntimeMockRecorder) DecodeUploadInfo(r interface{}) *gomock.Call {
+// NewDecoderDecode indicates an expected call of NewDecoderDecode
+func (mr *MockdefaultFileServiceRuntimeMockRecorder) NewDecoderDecode(r, v interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecodeUploadInfo", reflect.TypeOf((*MockdefaultFileServiceRuntime)(nil).DecodeUploadInfo), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewDecoderDecode", reflect.TypeOf((*MockdefaultFileServiceRuntime)(nil).NewDecoderDecode), r, v)
 }
 
 // Open mocks base method

@@ -55,40 +55,14 @@ func TestDownloadFile(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestRequestUploadInfo(t *testing.T) {
-	// create server
-	serverFactory := &factories.HTTPServerFactory{}
-	listener, server, err := serverFactory.NewDummyUploader()
-	assert.Equal(t, nil, err)
-	port := listener.Addr().(*net.TCPAddr).Port
-
-	// request upload info
-	fileSvc := services.NewFileService(nil)
-	uploadInfo, err := fileSvc.RequestUploadInfo(
-		fmt.Sprintf("http://localhost:%d/upload-info", port),
-		5,
-	)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, &services.FileUploadInfo{
-		Method: http.MethodPut,
-		URL:    fmt.Sprintf("http://localhost:%d/upload", port),
-		Headers: http.Header{
-			"Content-Length": []string{"5"},
-		},
-	}, uploadInfo)
-
-	// shutdown test server
-	err = server.Shutdown(context.Background())
-	assert.Equal(t, nil, err)
-}
-
 func TestUploadFile(t *testing.T) {
 	// create server
 	serverFactory := &factories.HTTPServerFactory{}
 	listener, server, err := serverFactory.NewDummyUploader()
 	assert.Equal(t, nil, err)
 	port := listener.Addr().(*net.TCPAddr).Port
-	url := fmt.Sprintf("http://localhost:%d/upload", port)
+	authorizedServerURL := fmt.Sprintf("http://localhost:%d/upload-info", port)
+	objectURL := fmt.Sprintf("http://localhost:%d/upload", port)
 
 	// create file
 	const (
@@ -101,17 +75,11 @@ func TestUploadFile(t *testing.T) {
 
 	// upload
 	fileSvc := services.NewFileService(nil)
-	err = fileSvc.UploadFile(relativePath, &services.FileUploadInfo{
-		Method: http.MethodPut,
-		URL:    url,
-		Headers: http.Header{
-			"Content-Length": []string{fmt.Sprintf("%d", bytesToBeUploaded)},
-		},
-	})
+	err = fileSvc.UploadFile(relativePath, authorizedServerURL)
 	assert.Equal(t, nil, err)
 
 	// check uploaded content
-	resp, err := http.Get(url)
+	resp, err := http.Get(objectURL)
 	assert.Equal(t, nil, err)
 	defer resp.Body.Close()
 	uploadedContentBytes, err := ioutil.ReadAll(resp.Body)
@@ -294,22 +262,6 @@ func TestListFiles(t *testing.T) {
 	files, err := fileSvc.ListFiles("./" + fixture.GetName())
 	assert.Equal(t, nil, err)
 	assert.Equal(t, []string{"SingleFile.txt", "SingleFile2.txt", "SingleFile3.txt"}, files)
-
-	err = fixture.Remove(".")
-	assert.Equal(t, nil, err)
-}
-
-func TestGetFileSize(t *testing.T) {
-	fileSvc := services.NewFileService(nil)
-	fixture, ok := fixtures.SingleFile().(*factories.File)
-	assert.Equal(t, true, ok)
-
-	err := fixture.Write(".")
-	assert.Equal(t, nil, err)
-
-	size, err := fileSvc.GetFileSize("./" + fixture.GetName())
-	assert.Equal(t, nil, err)
-	assert.Equal(t, len(fixture.Content), size)
 
 	err = fixture.Remove(".")
 	assert.Equal(t, nil, err)

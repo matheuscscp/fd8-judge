@@ -161,17 +161,7 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("error compressing outputs: %w", err)
 	}
 
-	compressedOutputsSize, err := e.FileService.GetFileSize(filePathCompressedOutputs)
-	if err != nil {
-		return fmt.Errorf("error getting compressed output size: %w", err)
-	}
-
-	uploadInfo, err := e.FileService.RequestUploadInfo(e.UploadAuthorizedServerURL, compressedOutputsSize)
-	if err != nil {
-		return fmt.Errorf("error requesting compressed outputs upload info: %w", err)
-	}
-
-	if err := e.FileService.UploadFile(filePathCompressedOutputs, uploadInfo); err != nil {
+	if err := e.FileService.UploadFile(filePathCompressedOutputs, e.UploadAuthorizedServerURL); err != nil {
 		return fmt.Errorf("error uploading compressed outputs: %w", err)
 	}
 

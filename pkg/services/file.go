@@ -14,30 +14,22 @@ import (
 	"strings"
 )
 
+const (
+	// FileUploadSizeHeader is the header sent to the authorized server when requesting the one-time
+	// upload request.
+	FileUploadSizeHeader = "X-Content-Length"
+)
+
 type (
-	// FileUploadInfo holds HTTP fields for the upload request.
-	FileUploadInfo struct {
-		// Method is the method for the upload request.
-		Method string
-
-		// URL is the URL for the upload request.
-		URL string
-
-		// Headers holds the headers for the upload request.
-		Headers http.Header
-	}
-
 	// FileService provides methods to manipulate files.
 	FileService interface {
 		// DownloadFile downloads a file storing it in the local file system and returns the number of
 		// bytes written.
 		DownloadFile(relativePath, url string, headers http.Header) (int64, error)
 
-		// RequestUploadInfo requests an upload tuple (method, url, headers) to an authorized server.
-		RequestUploadInfo(authorizedServerURL string, fileSize int) (*FileUploadInfo, error)
-
-		// UploadFile uploads a file given an upload tuple (method, url, headers).
-		UploadFile(relativePath string, uploadInfo *FileUploadInfo) error
+		// UploadFile uploads a file first requesting a one-time upload request to an authorized server.
+		// FileUploadSizeHeader is sent with the file size when requesting the one-time request.
+		UploadFile(relativePath string, authorizedServerURL string) error
 
 		// Compress compresses a file or a folder into a .tar.gz file.
 		Compress(inputRelativePath, outputRelativePath string) error
@@ -56,9 +48,6 @@ type (
 
 		// ListFiles returns a list of files (folders are discarded) contained in the given path.
 		ListFiles(relativePath string) ([]string, error)
-
-		// GetFileSize returns the size of the given file.
-		GetFileSize(relativePath string) (int, error)
 	}
 
 	defaultFileServiceRuntime interface {
@@ -66,7 +55,7 @@ type (
 		Do(req *http.Request) (*http.Response, error)
 		Create(name string) (io.WriteCloser, error)
 		Copy(dst io.Writer, src io.Reader) (int64, error)
-		DecodeUploadInfo(r io.Reader) (*FileUploadInfo, error)
+		NewDecoderDecode(r io.Reader, v interface{}) error
 		Open(name string) (io.ReadCloser, error)
 		RemoveAll(path string) error
 		Walk(root string, walkFn filepath.WalkFunc) error
@@ -137,46 +126,46 @@ func (f *defaultFileService) DownloadFile(relativePath, url string, headers http
 	return bytes, nil
 }
 
-// RequestUploadInfo requests UploadInfo data to an authorized endpoint.
-func (f *defaultFileService) RequestUploadInfo(authorizedServerURL string, fileSize int) (*FileUploadInfo, error) {
+// UploadFile uploads a file first requesting a one-time upload request to an authorized server.
+// FileUploadSizeHeader is sent with the file size when requesting the one-time request.
+func (f *defaultFileService) UploadFile(relativePath string, authorizedServerURL string) error {
+	relativePath = filepath.Clean(relativePath)
+
+	// get file info to get size
+	fileInfo, err := f.runtime.Stat(relativePath)
+	if err != nil {
+		return fmt.Errorf("error getting file infos to get size: %w", err)
+	}
+
+	// request one-time upload request
 	req, err := f.runtime.NewRequest(http.MethodGet, authorizedServerURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating upload info request: %w", err)
+		return fmt.Errorf("error creating upload info request: %w", err)
 	}
-	req.Header.Add("X-Content-Length", fmt.Sprintf("%d", fileSize))
-
-	// do request
+	req.Header.Add(FileUploadSizeHeader, fmt.Sprintf("%v", fileInfo.Size()))
 	resp, err := f.runtime.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting upload info: %w", err)
+		return fmt.Errorf("error requesting upload info: %w", err)
 	}
 	defer resp.Body.Close()
-
-	// check status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status in upload info response: %s", resp.Status)
+		return fmt.Errorf("unexpected status in upload info response: %s", resp.Status)
+	}
+	var uploadInfo struct {
+		Method, URL string
+		Headers     http.Header
+	}
+	if err := f.runtime.NewDecoderDecode(resp.Body, &uploadInfo); err != nil {
+		return fmt.Errorf("error decoding upload info: %w", err)
 	}
 
-	// parse response
-	uploadInfo, err := f.runtime.DecodeUploadInfo(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding upload info: %w", err)
-	}
-
-	return uploadInfo, nil
-}
-
-// UploadFile uploads a file stored in the given relative path.
-func (f *defaultFileService) UploadFile(relativePath string, uploadInfo *FileUploadInfo) error {
-	// open file
+	// do upload
 	file, err := f.runtime.Open(relativePath)
 	if err != nil {
 		return fmt.Errorf("error opening upload file: %w", err)
 	}
 	defer file.Close()
-
-	// create request object
-	req, err := f.runtime.NewRequest(uploadInfo.Method, uploadInfo.URL, file)
+	req, err = f.runtime.NewRequest(uploadInfo.Method, uploadInfo.URL, file)
 	if err != nil {
 		return fmt.Errorf("error building upload request: %w", err)
 	}
@@ -185,15 +174,11 @@ func (f *defaultFileService) UploadFile(relativePath string, uploadInfo *FileUpl
 			req.Header.Add(headerName, headerValue)
 		}
 	}
-
-	// do request
-	resp, err := f.runtime.Do(req)
+	resp, err = f.runtime.Do(req)
 	if err != nil {
 		return fmt.Errorf("error performing upload request: %w", err)
 	}
 	defer resp.Body.Close()
-
-	// check status
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status in upload response: %s", resp.Status)
 	}
@@ -406,15 +391,6 @@ func (f *defaultFileService) ListFiles(relativePath string) ([]string, error) {
 	return files, nil
 }
 
-// GetFileSize returns the size of the given file.
-func (f *defaultFileService) GetFileSize(relativePath string) (int, error) {
-	info, err := f.runtime.Stat(filepath.Clean(relativePath))
-	if err != nil {
-		return 0, fmt.Errorf("error getting file infos to get size: %w", err)
-	}
-	return int(info.Size()), nil
-}
-
 func (*fileServiceDefaultRuntime) NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	return http.NewRequest(method, url, body)
 }
@@ -431,9 +407,8 @@ func (*fileServiceDefaultRuntime) Copy(dst io.Writer, src io.Reader) (int64, err
 	return io.Copy(dst, src)
 }
 
-func (*fileServiceDefaultRuntime) DecodeUploadInfo(r io.Reader) (*FileUploadInfo, error) {
-	var uploadInfo FileUploadInfo
-	return &uploadInfo, json.NewDecoder(r).Decode(&uploadInfo)
+func (*fileServiceDefaultRuntime) NewDecoderDecode(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
 }
 
 func (*fileServiceDefaultRuntime) Open(name string) (io.ReadCloser, error) {
