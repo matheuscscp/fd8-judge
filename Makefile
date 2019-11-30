@@ -22,7 +22,7 @@ BUILD_TARGETS := bin/fd8-judge
 build: $(BUILD_TARGETS)
 
 bin/fd8-judge: $(SOURCE_FILES)
-	go build -o $@
+	go build -race -o $@
 
 .PHONY: clean
 clean:
@@ -67,11 +67,11 @@ test: test-unit test-integration
 
 .PHONY: test-unit
 test-unit: clean-test cov
-	go test $(TESTABLE_PACKAGES) -tags=unit -coverprofile cov/unit.out
+	go test -race $(TESTABLE_PACKAGES) -tags=unit -coverprofile cov/unit.out
 
 .PHONY: test-integration
 test-integration: clean-test cov bin/fd8-judge
-	go test $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out -p 1
+	go test -race $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out -p 1
 
 .PHONY: clean-test
 clean-test:
