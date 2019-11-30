@@ -19,10 +19,13 @@ type Cage struct {
 }
 
 // Encage fixes command's path and args hijacked by TestCage.Encage().
-func (c *Cage) Encage(monster *exec.Cmd) *exec.Cmd {
-	cmd := c.TestCage.Encage(monster)
+func (c *Cage) Encage(monster *exec.Cmd) (*exec.Cmd, error) {
+	cmd, err := c.TestCage.Encage(monster)
+	if err != nil {
+		return nil, err
+	}
 	helpers.ReplaceCageCommandPathAndArgs(c.RootPath, cmd)
-	return cmd
+	return cmd, nil
 }
 
 // Execute delegates to testCage.Encage().

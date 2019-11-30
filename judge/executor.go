@@ -171,11 +171,16 @@ func (e *Executor) Execute() error {
 // runWithoutInteractor executes the problem solution without interactor (only feeds input and
 // stores output).
 func (e *Executor) runWithoutInteractor(testCase *testCaseFiles) error {
+	var err error
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	solution := e.SolutionProgramService.GetExecutionCommand(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
-	solution = e.SolutionCage.Encage(solution)
+	solution, err = e.SolutionCage.Encage(solution)
+	if err != nil {
+		return fmt.Errorf("error encaging solution command: %w", err)
+	}
 
 	input, err := e.FileService.OpenFile(testCase.input)
 	if err != nil {
@@ -233,11 +238,16 @@ func (e *Executor) runWithoutInteractor(testCase *testCaseFiles) error {
 
 // runWithDefaultInteractor executes the problem solution with the default interactor.
 func (e *Executor) runWithDefaultInteractor(testCase *testCaseFiles) error {
+	var err error
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	solution := e.SolutionProgramService.GetExecutionCommand(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
-	solution = e.SolutionCage.Encage(solution)
+	solution, err = e.SolutionCage.Encage(solution)
+	if err != nil {
+		return fmt.Errorf("error encaging solution command: %w", err)
+	}
 
 	input, err := e.FileService.OpenFile(testCase.input)
 	if err != nil {
@@ -313,13 +323,22 @@ func (e *Executor) runWithDefaultInteractor(testCase *testCaseFiles) error {
 
 // runWithCustomInteractor executes the problem solution with the given custom interactor.
 func (e *Executor) runWithCustomInteractor(testCase *testCaseFiles) error {
+	var err error
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	interactor := e.InteractorProgramService.GetExecutionCommand(ctx, e.filePathInteractorSource, e.filePathInteractorBinary)
-	interactor = e.InteractorCage.Encage(interactor)
+	interactor, err = e.InteractorCage.Encage(interactor)
+	if err != nil {
+		return fmt.Errorf("error encaging interactor command: %w", err)
+	}
+
 	solution := e.SolutionProgramService.GetExecutionCommand(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
-	solution = e.SolutionCage.Encage(solution)
+	solution, err = e.SolutionCage.Encage(solution)
+	if err != nil {
+		return fmt.Errorf("error encaging solution command: %w", err)
+	}
 
 	output, err := e.FileService.CreateFile(testCase.output)
 	if err != nil {

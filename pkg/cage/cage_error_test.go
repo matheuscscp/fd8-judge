@@ -3,6 +3,8 @@
 package cage_test
 
 import (
+	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -15,7 +17,52 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func TestExecute(t *testing.T) {
+func TestEncageError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockCage.MockdefaultCageRuntime
+
+	var tests = map[string]struct {
+		cage    *cage.DefaultCage
+		monster *exec.Cmd
+		encaged *exec.Cmd
+		err     error
+		mocks   func()
+	}{
+		"look-path-error": {
+			cage: &cage.DefaultCage{},
+			err:  fmt.Errorf("error looking path for fd8-judge: %w", fmt.Errorf("error")),
+			mocks: func() {
+				mockRuntime.EXPECT().LookPath("fd8-judge").Return("", fmt.Errorf("error"))
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockCage.NewMockdefaultCageRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			osArgs0 := os.Args[0]
+			os.Args[0] = "fd8-judge"
+
+			cage := cage.New(test.cage, mockRuntime)
+			encaged, err := cage.Encage(test.monster)
+			assert.Equal(t, test.err, err)
+			assert.Equal(t, test.encaged, encaged)
+			assert.Equal(t, true, err != nil || encaged == test.monster)
+
+			os.Args[0] = osArgs0
+		})
+	}
+}
+
+func TestExecuteError(t *testing.T) {
 	t.Parallel()
 
 	var mockRuntime *mockCage.MockdefaultCageRuntime
@@ -27,6 +74,13 @@ func TestExecute(t *testing.T) {
 		err   error
 		mocks func()
 	}{
+		"exec-error": {
+			cage: &cage.DefaultCage{},
+			err:  fmt.Errorf("error in exec syscall: %w", fmt.Errorf("error")),
+			mocks: func() {
+				mockRuntime.EXPECT().Exec("", nil, nil).Return(fmt.Errorf("error"))
+			},
+		},
 		"restrict-time-limit-error": {
 			cage: &cage.DefaultCage{
 				TimeLimit: &second,
@@ -37,13 +91,6 @@ func TestExecute(t *testing.T) {
 					Cur: 1,
 					Max: 1,
 				}).Return(fmt.Errorf("error"))
-			},
-		},
-		"exec-error": {
-			cage: &cage.DefaultCage{},
-			err:  fmt.Errorf("error in exec syscall: %w", fmt.Errorf("error")),
-			mocks: func() {
-				mockRuntime.EXPECT().Exec("", nil, nil).Return(fmt.Errorf("error"))
 			},
 		},
 	}

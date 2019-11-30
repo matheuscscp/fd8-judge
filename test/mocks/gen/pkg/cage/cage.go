@@ -35,11 +35,12 @@ func (m *MockCage) EXPECT() *MockCageMockRecorder {
 }
 
 // Encage mocks base method
-func (m *MockCage) Encage(monster *exec.Cmd) *exec.Cmd {
+func (m *MockCage) Encage(monster *exec.Cmd) (*exec.Cmd, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Encage", monster)
 	ret0, _ := ret[0].(*exec.Cmd)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Encage indicates an expected call of Encage
@@ -85,18 +86,19 @@ func (m *MockdefaultCageRuntime) EXPECT() *MockdefaultCageRuntimeMockRecorder {
 	return m.recorder
 }
 
-// Setrlimit mocks base method
-func (m *MockdefaultCageRuntime) Setrlimit(which int, lim *unix.Rlimit) error {
+// LookPath mocks base method
+func (m *MockdefaultCageRuntime) LookPath(file string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Setrlimit", which, lim)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "LookPath", file)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Setrlimit indicates an expected call of Setrlimit
-func (mr *MockdefaultCageRuntimeMockRecorder) Setrlimit(which, lim interface{}) *gomock.Call {
+// LookPath indicates an expected call of LookPath
+func (mr *MockdefaultCageRuntimeMockRecorder) LookPath(file interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setrlimit", reflect.TypeOf((*MockdefaultCageRuntime)(nil).Setrlimit), which, lim)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookPath", reflect.TypeOf((*MockdefaultCageRuntime)(nil).LookPath), file)
 }
 
 // Exec mocks base method
@@ -111,4 +113,18 @@ func (m *MockdefaultCageRuntime) Exec(argv0 string, argv, envv []string) error {
 func (mr *MockdefaultCageRuntimeMockRecorder) Exec(argv0, argv, envv interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockdefaultCageRuntime)(nil).Exec), argv0, argv, envv)
+}
+
+// Setrlimit mocks base method
+func (m *MockdefaultCageRuntime) Setrlimit(which int, lim *unix.Rlimit) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Setrlimit", which, lim)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Setrlimit indicates an expected call of Setrlimit
+func (mr *MockdefaultCageRuntimeMockRecorder) Setrlimit(which, lim interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setrlimit", reflect.TypeOf((*MockdefaultCageRuntime)(nil).Setrlimit), which, lim)
 }

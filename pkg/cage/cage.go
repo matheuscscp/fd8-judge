@@ -15,7 +15,7 @@ type (
 	Cage interface {
 		// Encage encages the given command, returning a command that will invoke the cage with
 		// the arguments necessary to run the given command.
-		Encage(monster *exec.Cmd) *exec.Cmd
+		Encage(monster *exec.Cmd) (*exec.Cmd, error)
 
 		// Execute installs the restrictions in the current process and then executes the command.
 		Execute() error
@@ -38,8 +38,9 @@ type (
 	}
 
 	defaultCageRuntime interface {
-		Setrlimit(which int, lim *unix.Rlimit) error
+		LookPath(file string) (string, error)
 		Exec(argv0 string, argv []string, envv []string) error
+		Setrlimit(which int, lim *unix.Rlimit) error
 	}
 
 	cageDefaultRuntime struct {
@@ -78,9 +79,19 @@ func New(cage *DefaultCage, runtime defaultCageRuntime) Cage {
 
 // Encage encages the given command, returning a command that will invoke the cage with
 // the arguments necessary to run the given command.
-func (c *DefaultCage) Encage(monster *exec.Cmd) *exec.Cmd {
-	cagePath := os.Args[0]
-	cageArgs := []string{filepath.Base(cagePath), CommandLineCommand}
+func (c *DefaultCage) Encage(monster *exec.Cmd) (*exec.Cmd, error) {
+	fd8judge := os.Args[0]
+	cagePath := fd8judge
+	cageArgs := []string{fd8judge, CommandLineCommand}
+
+	// ensure cagePath is a path with exec.LookPath()
+	if filepath.Base(fd8judge) == fd8judge {
+		lp, err := c.runtime.LookPath(fd8judge)
+		if err != nil {
+			return nil, fmt.Errorf("error looking path for fd8-judge: %w", err)
+		}
+		cagePath = lp
+	}
 
 	appendFlag := func(flag, value string) {
 		cageArgs = append(cageArgs, CommandLineFlagPrefix+flag, value)
@@ -99,7 +110,7 @@ func (c *DefaultCage) Encage(monster *exec.Cmd) *exec.Cmd {
 
 	monster.Path = cagePath
 	monster.Args = cageArgs
-	return monster
+	return monster, nil
 }
 
 // Execute installs the restrictions in the current process and then does the actual unix.Exec().
@@ -133,10 +144,14 @@ func (c *DefaultCage) restrictTimeLimit() error {
 	return nil
 }
 
-func (*cageDefaultRuntime) Setrlimit(which int, lim *unix.Rlimit) error {
-	return unix.Setrlimit(which, lim)
+func (*cageDefaultRuntime) LookPath(file string) (string, error) {
+	return exec.LookPath(file)
 }
 
 func (*cageDefaultRuntime) Exec(argv0 string, argv []string, envv []string) error {
 	return unix.Exec(argv0, argv, envv)
+}
+
+func (*cageDefaultRuntime) Setrlimit(which int, lim *unix.Rlimit) error {
+	return unix.Setrlimit(which, lim)
 }

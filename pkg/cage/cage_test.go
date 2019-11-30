@@ -5,7 +5,6 @@ package cage_test
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 	"testing"
 	"time"
@@ -46,7 +45,7 @@ func TestEncage(t *testing.T) {
 			returnsError: true,
 			exitCodes:    []int{int(syscall.SIGXCPU), int(syscall.SIGKILL)},
 		},
-		"time-limit-defaults-to-one-second": {
+		"time-limit-lower-than-one-second-does-not-break": {
 			cagedCommandFlags: []string{
 				"--loop-forever",
 			},
@@ -66,10 +65,11 @@ func TestEncage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cmd := exec.Command("../../bin/fd8-judge", append([]string{"monster"}, test.cagedCommandFlags...)...)
 
-			cmd = cage.New(test.cage, nil).Encage(cmd)
-			assert.Equal(t, os.Args[0], cmd.Path)
+			encaged, err := cage.New(test.cage, nil).Encage(cmd)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, os.Args[0], encaged.Path)
 			expectedArgs := []string{
-				filepath.Base(os.Args[0]),
+				os.Args[0],
 				cage.CommandLineCommand,
 			}
 			expectedArgs = append(expectedArgs, test.cageFlags...)
@@ -87,17 +87,17 @@ func TestEncage(t *testing.T) {
 					arg,
 				)
 			}
-			assert.Equal(t, expectedArgs, cmd.Args)
+			assert.Equal(t, expectedArgs, encaged.Args)
 
-			helpers.ReplaceCageCommandPathAndArgs("../.." /* path to root */, cmd)
+			helpers.ReplaceCageCommandPathAndArgs("../.." /* path to root */, encaged)
 
-			outputBytes, err := cmd.Output()
+			outputBytes, err := encaged.Output()
 			assert.Equal(t, test.returnsError, err != nil)
 			assert.Equal(t, test.output, string(outputBytes))
 
 			codes := map[int]bool{
-				cmd.ProcessState.ExitCode():                      true,
-				int(cmd.ProcessState.Sys().(syscall.WaitStatus)): true,
+				encaged.ProcessState.ExitCode():                      true,
+				int(encaged.ProcessState.Sys().(syscall.WaitStatus)): true,
 			}
 			matches := 0
 			for _, exitCode := range test.exitCodes {
