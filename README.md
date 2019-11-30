@@ -1,5 +1,5 @@
 # fd8-judge
 
-[![Build Status](https://travis-ci.com/matheuscscp/fd8-judge.svg?token=S2R5yWGiTx6U53psqDZa&branch=master)](https://travis-ci.com/matheuscscp/fd8-judge)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/matheuscscp/fd8-judge/master?style=flat-square)](https://blog.golang.org/go1.13)[![Build Status](https://img.shields.io/travis/com/matheuscscp/fd8-judge/master?style=flat-square)](https://travis-ci.com/matheuscscp/fd8-judge/branches)[![Code Coverage](https://img.shields.io/codecov/c/github/matheuscscp/fd8-judge/master?style=flat-square)](https://codecov.io/gh/matheuscscp/fd8-judge)[![GoDoc Reference](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat-square)](https://godoc.org/github.com/matheuscscp/fd8-judge)
 
 A modern online judge

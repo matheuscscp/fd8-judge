@@ -49,8 +49,13 @@ clean-gen:
 # fix, lint, test and cover
 # ==================================================================================================
 
-TESTABLE_PACKAGES := `go list ./... | egrep -v 'protos|migrations|test|cmd|tools' | grep 'fd8-judge/'`
-COVERAGE_FILES := cov/unit.out cov/integration.out
+FILTER_TESTABLE_PACKAGES := egrep -v 'protos|migrations|test|cmd|tools'
+TESTABLE_PACKAGES := $(shell go list ./... | $(FILTER_TESTABLE_PACKAGES) | grep 'fd8-judge/')
+
+UNIT_COVERAGE_FILE := cov/unit.out
+INTEGRATION_COVERAGE_FILE := cov/integration.out
+COVERAGE_FILES := $(UNIT_COVERAGE_FILE) $(INTEGRATION_COVERAGE_FILE)
+
 TEST_GARBAGE_FILES := judge/serverFiles/ judge/bundle/ judge/interactor* judge/solution* judge/outputs*
 
 .PHONY: fix
@@ -67,11 +72,11 @@ test: test-unit test-integration
 
 .PHONY: test-unit
 test-unit: clean-test cov
-	go test -race $(TESTABLE_PACKAGES) -tags=unit -coverprofile cov/unit.out
+	go test $(TESTABLE_PACKAGES) -race -coverpkg=./... -tags=unit -coverprofile=$(UNIT_COVERAGE_FILE)
 
 .PHONY: test-integration
 test-integration: clean-test cov bin/fd8-judge
-	go test -race $(TESTABLE_PACKAGES) -tags=integration -coverprofile cov/integration.out -p 1
+	go test $(TESTABLE_PACKAGES) -race -coverpkg=./... -p 1 -tags=integration -coverprofile=$(INTEGRATION_COVERAGE_FILE)
 
 .PHONY: clean-test
 clean-test:
@@ -81,11 +86,11 @@ cov:
 	mkdir -p ./cov
 
 .PHONY: cover
-cover: cov/full.out
-	go tool cover -func=cov/full.out | grep total | awk '{print $$3}'
+cover: cov/coverage.txt
+	go tool cover -func=cov/coverage.txt | grep total | awk '{print $$3}'
 
-cov/full.out: cov $(COVERAGE_FILES)
-	$(GOCOVMERGE) $(COVERAGE_FILES) > $@
+cov/coverage.txt: cov $(COVERAGE_FILES)
+	$(GOCOVMERGE) $(COVERAGE_FILES) | $(FILTER_TESTABLE_PACKAGES) > $@
 
 # ==================================================================================================
 # all

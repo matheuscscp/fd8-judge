@@ -1,10 +1,14 @@
-language: go
-go:
-- "1.13"
-sudo: false
 jobs:
   include:
-  - stage: lint
+  - language: go
+    go:
+    - "1.13"
+    stage: lint
     script: make lint
-  - stage: test
+
+  - language: go
+    go:
+    - "1.13"
+    stage: test
     script: make test
+    after_success: bash <(curl -s https://codecov.io/bash)
