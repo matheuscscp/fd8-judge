@@ -13,9 +13,3 @@ jobs:
     script:
     - make test cov/coverage.txt
     - bash <(curl -s https://codecov.io/bash)
-
-  - stage: build-and-release
-    branches:
-      only:
-      - master
-    script: "curl -X POST -H \"Content-Type: application/json\" -d '{\"source_type\": \"Branch\", \"source_name\": \"master\"}' $DOCKER_BUILD_URL"
