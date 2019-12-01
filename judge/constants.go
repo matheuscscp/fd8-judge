@@ -22,7 +22,6 @@ const (
 	filePathCompressedBundle     = "./bundle.tar.gz"
 	filePathBundleInteractor     = folderPathBundle + "/interactor"
 	filePathSolutionSingleOutput = folderPathSolutionOutputs + "/single.txt"
-	filePathCompressedOutputs    = "./outputs.tar.gz"
 	filesPathPrefixInteractor    = "./interactor"
 	filesPathPrefixSolution      = "./solution"
 )

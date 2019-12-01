@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/matheuscscp/fd8-judge/pkg/cage"
 	"github.com/matheuscscp/fd8-judge/pkg/services"
@@ -134,35 +135,34 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("error listing test cases: %w", err)
 	}
 
-	// execute each test case
+	// define run function based on the given interactor string
+	var runFunc func(*testCaseFiles) error
+	var errString string
+	switch e.Interactor {
+	case NoInteractor:
+		runFunc = e.runWithoutInteractor
+		errString = "error running without interactor"
+	case DefaultInteractor:
+		runFunc = e.runWithDefaultInteractor
+		errString = "error running with default interactor"
+	case CustomInteractor:
+		runFunc = e.runWithCustomInteractor
+		errString = "error running with custom interactor"
+	default:
+		return fmt.Errorf(
+			"invalid interactor, got '%s', want one in {%s}", e.Interactor,
+			strings.Join([]string{NoInteractor, DefaultInteractor, CustomInteractor}, ", "),
+		)
+	}
+
 	for _, testCase := range testCases {
-		switch e.Interactor {
-		case NoInteractor:
-			if err := e.runWithoutInteractor(testCase); err != nil {
-				return fmt.Errorf("error running without interactor: %w", err)
-			}
-		case DefaultInteractor:
-			if err := e.runWithDefaultInteractor(testCase); err != nil {
-				return fmt.Errorf("error running with default interactor: %w", err)
-			}
-		case CustomInteractor:
-			if err := e.runWithCustomInteractor(testCase); err != nil {
-				return fmt.Errorf("error running with custom interactor: %w", err)
-			}
-		default:
-			return fmt.Errorf(
-				"invalid interactor, want one in {'', 'default-interactor', 'custom-interactor'}, got '%s'",
-				e.Interactor,
-			)
+		if err := runFunc(testCase); err != nil {
+			return fmt.Errorf("%s: %w", errString, err)
 		}
-	}
 
-	if err := e.FileService.Compress(folderPathSolutionOutputs, filePathCompressedOutputs); err != nil {
-		return fmt.Errorf("error compressing outputs: %w", err)
-	}
-
-	if err := e.FileService.UploadFile(filePathCompressedOutputs, e.UploadAuthorizedServerURL); err != nil {
-		return fmt.Errorf("error uploading compressed outputs: %w", err)
+		if err := e.FileService.UploadFile(testCase.output, e.UploadAuthorizedServerURL); err != nil {
+			return fmt.Errorf("error uploading output file '%s': %w", testCase.output, err)
+		}
 	}
 
 	return nil

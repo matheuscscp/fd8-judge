@@ -8,6 +8,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
+
+	"github.com/matheuscscp/fd8-judge/pkg/services"
 )
 
 // HTTPServerFactory represents a factory of HTTP servers for testing.
@@ -72,7 +75,7 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 			Method: http.MethodPut,
 			URL:    fmt.Sprintf("http://localhost:%d/upload", port),
 			Headers: http.Header{
-				"Content-Length": []string{r.Header.Get("X-File-Size")},
+				"Content-Length": []string{r.Header.Get(services.FileUploadSizeHeader)},
 			},
 		}
 		payload, err := json.Marshal(uploadInfo)
@@ -107,7 +110,7 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 }
 
 // NewFileServer returns a server that serves files.
-func (f *HTTPServerFactory) NewFileServer(relativePath string) (net.Listener, *http.Server, error) {
+func (f *HTTPServerFactory) NewFileServer(rootRelativePath string) (net.Listener, *http.Server, error) {
 	// create listener at a random port
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -136,12 +139,13 @@ func (f *HTTPServerFactory) NewFileServer(relativePath string) (net.Listener, *h
 		switch r.Method {
 		case http.MethodGet:
 			port := listener.Addr().(*net.TCPAddr).Port
+			path := filepath.Join(rootRelativePath, r.Header.Get(services.FileUploadNameHeader))
 			uploadInfo := &struct {
 				Method, URL string
 				Headers     http.Header
 			}{
 				Method: http.MethodPut,
-				URL:    fmt.Sprintf("http://localhost:%d/upload?path=%s", port, relativePath),
+				URL:    fmt.Sprintf("http://localhost:%d/upload?path=%s", port, path),
 			}
 			payload, err := json.Marshal(uploadInfo)
 			if err != nil {
@@ -159,6 +163,7 @@ func (f *HTTPServerFactory) NewFileServer(relativePath string) (net.Listener, *h
 			if _, err := io.Copy(file, r.Body); err != nil {
 				panic(fmt.Errorf("error copying uploaded file for file server: %w", err))
 			}
+			w.WriteHeader(http.StatusOK)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}

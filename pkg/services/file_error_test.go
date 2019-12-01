@@ -166,8 +166,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(nil, fmt.Errorf("error"))
 			},
@@ -183,8 +183,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 201,
@@ -204,8 +204,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -230,8 +230,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -257,8 +257,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -285,8 +285,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -314,8 +314,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						"X-File-Name": []string{"."},
-						"X-File-Size": []string{"0"},
+						services.FileUploadNameHeader: []string{"."},
+						services.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,

@@ -23,7 +23,7 @@ func TestExecute(t *testing.T) {
 	serverFactory := &factories.HTTPServerFactory{}
 	serverFiles := &factories.Folder{Name: "serverFiles"}
 
-	listener, server, err := serverFactory.NewFileServer("./serverFiles/outputs.tar.gz")
+	listener, server, err := serverFactory.NewFileServer("./serverFiles")
 	assert.Equal(t, nil, err)
 	port := listener.Addr().(*net.TCPAddr).Port
 
@@ -99,21 +99,18 @@ func TestExecute(t *testing.T) {
 				if folder, ok := bundleNode.(*factories.Folder); ok && folder.GetName() == "outputs" {
 					for _, outputNode := range folder.Children {
 						outputFile := outputNode.(*factories.File)
+
 						outputBytes, err := ioutil.ReadFile("./outputs/" + outputFile.GetName())
 						assert.Equal(t, nil, err)
 						assert.Equal(t, outputFile.Content, string(outputBytes))
+
+						fileServerOutputBytes, err := ioutil.ReadFile("./serverFiles/" + outputFile.GetName())
+						assert.Equal(t, nil, err)
+						assert.Equal(t, outputFile.Content, string(fileServerOutputBytes))
 					}
 					break
 				}
 			}
-
-			expectedBytes, err := ioutil.ReadFile("./outputs.tar.gz")
-			assert.Equal(t, nil, err)
-
-			bytes, err := ioutil.ReadFile("./serverFiles/outputs.tar.gz")
-			assert.Equal(t, nil, err)
-
-			assert.Equal(t, string(expectedBytes), string(bytes))
 
 			forestToRemove := []factories.FileTreeNode{
 				serverFiles,
@@ -121,7 +118,6 @@ func TestExecute(t *testing.T) {
 				&factories.Folder{Name: "outputs"},
 				&factories.File{Name: "solution" + solutionProgramService.GetSourceFileExtension()},
 				&factories.File{Name: "solution" + solutionProgramService.GetBinaryFileExtension()},
-				&factories.File{Name: "outputs.tar.gz"},
 			}
 			if test.interactor == judge.CustomInteractor {
 				forestToRemove = append(forestToRemove, &factories.File{
