@@ -18,4 +18,4 @@ jobs:
     branches:
       only:
       - master
-    script: curl -X POST $DOCKER_BUILD_URL
+    script: "curl -X POST -H \"Content-Type: application/json\" -d '{\"source_type\": \"Branch\", \"source_name\": \"master\"}' $DOCKER_BUILD_URL"
