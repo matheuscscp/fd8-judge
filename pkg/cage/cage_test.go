@@ -5,6 +5,7 @@ package cage_test
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 	"testing"
 	"time"
@@ -65,9 +66,12 @@ func TestEncage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cmd := exec.Command("../../bin/fd8-judge", append([]string{"monster"}, test.cagedCommandFlags...)...)
 
+			osArgs0 := os.Args[0]
+			os.Args[0] = "go"
+
 			encaged, err := cage.New(test.cage, nil).Encage(cmd)
 			assert.Equal(t, nil, err)
-			assert.Equal(t, os.Args[0], encaged.Path)
+			assert.Equal(t, os.Args[0], filepath.Base(encaged.Path))
 			expectedArgs := []string{
 				os.Args[0],
 				cage.CommandLineCommand,
@@ -88,6 +92,8 @@ func TestEncage(t *testing.T) {
 				)
 			}
 			assert.Equal(t, expectedArgs, encaged.Args)
+
+			os.Args[0] = osArgs0
 
 			helpers.ReplaceCageCommandPathAndArgs("../.." /* path to root */, encaged)
 

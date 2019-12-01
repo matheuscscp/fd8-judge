@@ -67,7 +67,7 @@ func TestExecuteError(t *testing.T) {
 
 	var mockRuntime *mockCage.MockdefaultCageRuntime
 
-	second := time.Second
+	zeroDuration := time.Duration(0)
 
 	var tests = map[string]struct {
 		cage  *cage.DefaultCage
@@ -83,7 +83,7 @@ func TestExecuteError(t *testing.T) {
 		},
 		"restrict-time-limit-error": {
 			cage: &cage.DefaultCage{
-				TimeLimit: &second,
+				TimeLimit: &zeroDuration,
 			},
 			err: fmt.Errorf("error restricting time limit: %w", fmt.Errorf("error")),
 			mocks: func() {

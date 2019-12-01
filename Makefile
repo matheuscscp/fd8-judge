@@ -49,7 +49,7 @@ clean-gen:
 # fix, lint, test and cover
 # ==================================================================================================
 
-FILTER_TESTABLE_PACKAGES := egrep -v 'protos|migrations|test|cmd|tools'
+FILTER_TESTABLE_PACKAGES := egrep -v 'proto|migrations|test|cmd|tools'
 TESTABLE_PACKAGES := $(shell go list ./... | $(FILTER_TESTABLE_PACKAGES) | grep 'fd8-judge/')
 
 UNIT_COVERAGE_FILE := cov/unit.out

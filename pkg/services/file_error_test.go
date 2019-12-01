@@ -384,6 +384,18 @@ func TestCompressError(t *testing.T) {
 				mockRuntime.EXPECT().Create(outputRelativePath).Return(nil, fmt.Errorf("error"))
 			},
 		},
+		"walk-file-tree-error": {
+			output: testOutput{
+				err: fmt.Errorf("error"),
+			},
+			mocks: func() {
+				inputRelativePath := filepath.Clean("")
+				outputRelativePath := filepath.Clean("")
+				mockRuntime.EXPECT().Create(outputRelativePath).Return(&fixtures.NopWriteCloser{}, nil)
+				mockRuntime.EXPECT().Walk(inputRelativePath, gomock.Any()).Return(fmt.Errorf("error"))
+				mockRuntime.EXPECT().RemoveAll(outputRelativePath).Return(nil)
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -426,7 +438,7 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 		output testOutput
 		mocks  func()
 	}{
-		"walk-tree-for-compression-error": {
+		"walk-file-tree-error": {
 			input: testInput{
 				err: fmt.Errorf("error"),
 			},
