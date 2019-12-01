@@ -26,7 +26,7 @@ bin/fd8-judge: $(SOURCE_FILES)
 
 .PHONY: clean
 clean:
-	rm -rf bin/ $(BUILD_TARGETS)
+	rm -rf bin/ cov/ $(BUILD_TARGETS)
 
 # ==================================================================================================
 # gen and clean-gen (artifacts generation: mocks, protos...)
@@ -80,17 +80,21 @@ test-integration: clean-test cov bin/fd8-judge
 
 .PHONY: clean-test
 clean-test:
-	rm -rf cov/ $(TEST_GARBAGE_FILES)
+	rm -rf $(TEST_GARBAGE_FILES)
 
 cov:
 	mkdir -p ./cov
 
 cov/coverage.txt: cov $(COVERAGE_FILES)
+	@touch $@
+	@cp $@ cov/old-coverage.out
 	$(GOCOVMERGE) $(COVERAGE_FILES) | $(FILTER_TESTABLE_PACKAGES) > $@
+	@echo old coverage: `go tool cover -func=cov/old-coverage.out | grep total | awk '{print $$3}'`
+	@echo new coverage: `go tool cover -func=$@ | grep total | awk '{print $$3}'`
 
 # ==================================================================================================
 # all
 # ==================================================================================================
 
 .PHONY: all
-all: gen fix lint test
+all: gen fix lint test cov/coverage.txt

@@ -63,7 +63,7 @@ func (f *Folder) IsFolder() bool {
 // Write writes the folder.
 func (f *Folder) Write(relativePath string) error {
 	curPath := filepath.Clean(relativePath) + "/" + f.Name
-	if err := os.Mkdir(curPath, os.ModeDir|0755); err != nil {
+	if err := os.MkdirAll(curPath, os.ModeDir|0755); err != nil {
 		return fmt.Errorf("error creating test folder: %w", err)
 	}
 	for _, child := range f.Children {

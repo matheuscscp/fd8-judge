@@ -904,3 +904,50 @@ func TestListFilesError(t *testing.T) {
 		})
 	}
 }
+
+func TestMoveFileTreeError(t *testing.T) {
+	t.Parallel()
+
+	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+
+	type (
+		testInput struct {
+			oldRelativePath string
+			newRelativePath string
+		}
+		testOutput struct {
+			err error
+		}
+	)
+	var tests = map[string]struct {
+		input  testInput
+		output testOutput
+		mocks  func()
+	}{
+		"rename-error": {
+			output: testOutput{
+				err: fmt.Errorf("error moving file tree: %w", fmt.Errorf("error")),
+			},
+			mocks: func() {
+				mockRuntime.EXPECT().Rename(gomock.Any(), gomock.Any()).Return(fmt.Errorf("error"))
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// mocks
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			if test.mocks != nil {
+				test.mocks()
+			}
+
+			fileSvc := services.NewFileService(mockRuntime)
+			err := fileSvc.MoveFileTree(test.input.oldRelativePath, test.input.newRelativePath)
+			assert.Equal(t, test.output, testOutput{
+				err: err,
+			})
+		})
+	}
+}

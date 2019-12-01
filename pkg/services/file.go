@@ -54,6 +54,9 @@ type (
 
 		// ListFiles returns a list of files (folders are discarded) contained in the given path.
 		ListFiles(relativePath string) ([]string, error)
+
+		// MoveFileTree moves a file tree in the old path to the new path.
+		MoveFileTree(oldRelativePath, newRelativePath string) error
 	}
 
 	defaultFileServiceRuntime interface {
@@ -70,8 +73,9 @@ type (
 		NewReader(r io.Reader) (io.ReadCloser, error)
 		Next(in *tar.Reader) (*tar.Header, error)
 		MkdirAll(path string) error
-		ReadDir(relativePath string) ([]os.FileInfo, error)
-		Stat(relativePath string) (os.FileInfo, error)
+		ReadDir(dirname string) ([]os.FileInfo, error)
+		Stat(name string) (os.FileInfo, error)
+		Rename(oldpath, newpath string) error
 	}
 
 	defaultFileService struct {
@@ -400,6 +404,14 @@ func (f *defaultFileService) ListFiles(relativePath string) ([]string, error) {
 	return files, nil
 }
 
+// MoveFileTree moves a file tree in the old path to the new path.
+func (f *defaultFileService) MoveFileTree(oldRelativePath, newRelativePath string) error {
+	if err := f.runtime.Rename(filepath.Clean(oldRelativePath), filepath.Clean(newRelativePath)); err != nil {
+		return fmt.Errorf("error moving file tree: %w", err)
+	}
+	return nil
+}
+
 func (*fileServiceDefaultRuntime) NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	return http.NewRequest(method, url, body)
 }
@@ -458,4 +470,8 @@ func (*fileServiceDefaultRuntime) ReadDir(dirname string) ([]os.FileInfo, error)
 
 func (*fileServiceDefaultRuntime) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(name)
+}
+
+func (*fileServiceDefaultRuntime) Rename(oldpath, newpath string) error {
+	return os.Rename(oldpath, newpath)
 }

@@ -268,3 +268,28 @@ func TestListFiles(t *testing.T) {
 	err = fixture.Remove(".")
 	assert.Equal(t, nil, err)
 }
+
+func TestMoveFileTree(t *testing.T) {
+	fileSvc := services.NewFileService(nil)
+	fixture, ok := fixtures.TestFolderThreeFiles().(*factories.Folder)
+	assert.Equal(t, true, ok)
+
+	err := fixture.Write("./old")
+	assert.Equal(t, nil, err)
+
+	err = fileSvc.MoveFileTree("./old", "./new")
+	assert.Equal(t, nil, err)
+
+	_, err = factories.ReadFileTree("./old", true)
+	assert.NotNil(t, err)
+
+	fixtureAtNewPath, err := factories.ReadFileTree("./new", true)
+	assert.Nil(t, err)
+	assert.Equal(t, &factories.Folder{
+		Name:     "new",
+		Children: []factories.FileTreeNode{fixture},
+	}, fixtureAtNewPath)
+
+	err = fixtureAtNewPath.Remove("./")
+	assert.Equal(t, nil, err)
+}
