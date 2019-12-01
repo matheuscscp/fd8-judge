@@ -11,5 +11,5 @@ jobs:
     - "1.13"
     stage: test-and-coverage
     script:
-    - make test cover
+    - make test cov/coverage.txt
     - bash <(curl -s https://codecov.io/bash)

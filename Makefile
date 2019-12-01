@@ -46,7 +46,7 @@ clean-gen:
 	rm -rf $(MOCKS)
 
 # ==================================================================================================
-# fix, lint, test and cover
+# fix, lint, test and coverage
 # ==================================================================================================
 
 FILTER_TESTABLE_PACKAGES := egrep -v 'proto|migrations|test|cmd|tools'
@@ -85,10 +85,6 @@ clean-test:
 cov:
 	mkdir -p ./cov
 
-.PHONY: cover
-cover: cov/coverage.txt
-	go tool cover -func=cov/coverage.txt | grep total | awk '{print $$3}'
-
 cov/coverage.txt: cov $(COVERAGE_FILES)
 	$(GOCOVMERGE) $(COVERAGE_FILES) | $(FILTER_TESTABLE_PACKAGES) > $@
 
@@ -97,4 +93,4 @@ cov/coverage.txt: cov $(COVERAGE_FILES)
 # ==================================================================================================
 
 .PHONY: all
-all: gen fix lint test cover
+all: gen fix lint test
