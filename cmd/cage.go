@@ -24,7 +24,7 @@ type cageFlags struct {
 func defineCageCommand() {
 	cageFlags := &cageFlags{}
 	cageCmd := &cobra.Command{
-		Use:   cage.CommandLineCommand,
+		Use:   cage.CommandLine,
 		Short: "Execute a process safely.",
 		Long:  "Execute a process in a minimally safe environment.",
 		RunE: func(cmd *cobra.Command, _ []string) error {

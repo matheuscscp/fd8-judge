@@ -48,8 +48,8 @@ type (
 )
 
 const (
-	// CommandLineCommand is the command-line command used to invoke the cage.
-	CommandLineCommand = "cage"
+	// CommandLine is the command-line command used to invoke the cage.
+	CommandLine = "cage" // TODO rename to CommandLine
 
 	// CommandLineFlagPrefix is the prefix to be prepended to a flag name to get a valid
 	// command-line.
@@ -82,7 +82,7 @@ func New(cage *DefaultCage, runtime defaultCageRuntime) Cage {
 func (c *DefaultCage) Encage(monster *exec.Cmd) (*exec.Cmd, error) {
 	fd8judge := os.Args[0]
 	cagePath := fd8judge
-	cageArgs := []string{fd8judge, CommandLineCommand}
+	cageArgs := []string{fd8judge, CommandLine}
 
 	// ensure cagePath is a path with exec.LookPath()
 	if filepath.Base(fd8judge) == fd8judge {

@@ -74,7 +74,7 @@ func TestEncage(t *testing.T) {
 			assert.Equal(t, os.Args[0], filepath.Base(encaged.Path))
 			expectedArgs := []string{
 				os.Args[0],
-				cage.CommandLineCommand,
+				cage.CommandLine,
 			}
 			expectedArgs = append(expectedArgs, test.cageFlags...)
 			expectedArgs = append(expectedArgs,
