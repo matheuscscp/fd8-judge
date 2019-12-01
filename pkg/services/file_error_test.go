@@ -841,8 +841,9 @@ func TestListFilesError(t *testing.T) {
 			relativePath string
 		}
 		testOutput struct {
-			files []string
-			err   error
+			files     []string
+			err       error
+			errString string
 		}
 	)
 	var tests = map[string]struct {
@@ -852,7 +853,8 @@ func TestListFilesError(t *testing.T) {
 	}{
 		"no-such-folder-error": {
 			output: testOutput{
-				err: &services.NoSuchFolderError{Path: filepath.Clean("")},
+				err:       &services.NoSuchFolderError{Path: filepath.Clean("")},
+				errString: fmt.Sprintf("no such folder: '%s'", filepath.Clean("")),
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
@@ -861,7 +863,8 @@ func TestListFilesError(t *testing.T) {
 		},
 		"read-folder-error": {
 			output: testOutput{
-				err: fmt.Errorf("error reading folder to list files: %w", fmt.Errorf("error")),
+				err:       fmt.Errorf("error reading folder to list files: %w", fmt.Errorf("error")),
+				errString: "error reading folder to list files: error",
 			},
 			mocks: func() {
 				relativePath := filepath.Clean("")
@@ -882,8 +885,9 @@ func TestListFilesError(t *testing.T) {
 			fileSvc := services.NewFileService(mockRuntime)
 			files, err := fileSvc.ListFiles(test.input.relativePath)
 			assert.Equal(t, test.output, testOutput{
-				files: files,
-				err:   err,
+				files:     files,
+				err:       err,
+				errString: err.Error(),
 			})
 		})
 	}
