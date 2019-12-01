@@ -21,6 +21,6 @@ WORKDIR /workspace/
 COPY --from=build /go/bin/fd8-judge /usr/local/bin/
 
 # confirm application works
-RUN fd8-judge | grep 'd8-judge is an open source cloud-native online judge.'
+RUN fd8-judge | grep 'fd8-judge is an open source cloud-native online judge.'
 
 CMD ["fd8-judge"]

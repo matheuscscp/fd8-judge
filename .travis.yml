@@ -13,3 +13,6 @@ jobs:
     script:
     - make test cov/coverage.txt
     - bash <(curl -s https://codecov.io/bash)
+
+  - stage: build-and-release
+    script: curl -X POST $DOCKER_BUILD_URL
