@@ -1,18 +1,21 @@
 jobs:
   include:
-  - language: go
+  - stage: lint
+    language: go
     go:
     - "1.13"
-    stage: lint
     script: make lint
 
-  - language: go
+  - stage: test-and-coverage
+    language: go
     go:
     - "1.13"
-    stage: test-and-coverage
     script:
     - make test cov/coverage.txt
     - bash <(curl -s https://codecov.io/bash)
 
   - stage: build-and-release
+    branches:
+      only:
+      - master
     script: curl -X POST $DOCKER_BUILD_URL
