@@ -1,3 +1,10 @@
+# Travis CI Build configuration
+# See https://config.travis-ci.com/ for reference.
+
+branches:
+  only:
+  - master
+
 jobs:
   include:
   - stage: lint

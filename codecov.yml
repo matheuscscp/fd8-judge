@@ -1,0 +1,6 @@
+# Codecov configuration
+# See https://docs.codecov.io/docs/codecov-yaml for reference.
+
+coverage:
+  status:
+    patch: off

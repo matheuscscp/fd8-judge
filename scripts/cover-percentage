@@ -1,0 +1,15 @@
+#!/bin/bash
+
+touch cov/percentage.out
+cp cov/percentage.out cov/old-percentage.out
+
+if [ "$(cat cov/old-percentage.out)" == "" ]; then
+  echo 0% > cov/old-percentage.out
+fi
+
+go tool cover -func=cov/coverage.txt | grep total | awk '{print $3}' > cov/percentage.out
+
+old=`cat cov/old-percentage.out | sed -e "s/%$//"`
+new=`cat cov/percentage.out | sed -e "s/%$//"`
+diff=`echo "$new - $old" | bc`
+echo "coverage: $old% --> $new% (+ $diff%)"

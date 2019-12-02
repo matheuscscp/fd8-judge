@@ -1,6 +1,8 @@
 
 # prepend GOFLAGS env var with '-mod=vendor' so all go commands use vendor folder
-GOFLAGS := -mod=vendor $(GOFLAGS)
+ifeq (,$(findstring -mod=vendor,$(GOFLAGS)))
+	GOFLAGS := -mod=vendor $(GOFLAGS)
+endif
 export GOFLAGS
 
 # ==================================================================================================
@@ -86,11 +88,12 @@ cov:
 	mkdir -p ./cov
 
 cov/coverage.txt: cov $(COVERAGE_FILES)
-	@touch $@
-	@cp $@ cov/old-coverage.out
 	$(GOCOVMERGE) $(COVERAGE_FILES) | $(FILTER_TESTABLE_PACKAGES) > $@
-	@echo old coverage: `go tool cover -func=cov/old-coverage.out | grep total | awk '{print $$3}'`
-	@echo new coverage: `go tool cover -func=$@ | grep total | awk '{print $$3}'`
+	@scripts/cover-percentage
+
+.PHONY: cover
+cover: cov/coverage.txt
+	@cat cov/percentage.out
 
 # ==================================================================================================
 # all

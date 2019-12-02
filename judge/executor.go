@@ -10,6 +10,8 @@ import (
 
 	"github.com/matheuscscp/fd8-judge/pkg/cage"
 	"github.com/matheuscscp/fd8-judge/pkg/services"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type (
@@ -56,6 +58,8 @@ type (
 		// SolutionCage restricts the solution process.
 		SolutionCage cage.Cage
 
+		testCases                []*testCaseFiles
+		numTestCases             int
 		filePathInteractorSource string
 		filePathInteractorBinary string
 		filePathSolutionSource   string
@@ -66,6 +70,19 @@ type (
 // Execute is the program to execute a programming problem solution feeding it with a set of
 // tests and to upload the results to the given endpoints.
 func (e *Executor) Execute() error {
+	if err := e.prepareBundle(); err != nil {
+		return err
+	}
+
+	if err := e.preparePrograms(); err != nil {
+		return err
+	}
+
+	return e.executeTestCases()
+}
+
+// prepareBundle downloads the bundle, uncompresses it and removes undesired files.
+func (e *Executor) prepareBundle() error {
 	if _, err := e.FileService.DownloadFile(filePathCompressedBundle, e.BundleRequestURL, e.BundleRequestHeaders); err != nil {
 		return fmt.Errorf("error downloading compressed problem bundle for execution: %w", err)
 	}
@@ -82,90 +99,100 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("error removing correct outputs for execution: %w", err)
 	}
 
-	// compile custom interactor if present
-	if e.InteractorProgramService != nil {
-		e.filePathInteractorSource = filesPathPrefixInteractor + e.InteractorProgramService.GetSourceFileExtension()
-		e.filePathInteractorBinary = filesPathPrefixInteractor + e.InteractorProgramService.GetBinaryFileExtension()
-
-		interactorBundleFile, err := e.FileService.OpenFile(filePathBundleInteractor)
-		if err != nil {
-			return fmt.Errorf("error opening custom interactor source code: %w", err)
-		}
-
-		interactorSourceFile, err := e.FileService.CreateFile(e.filePathInteractorSource)
-		if err != nil {
-			return fmt.Errorf("error creating copy file for custom interactor: %w", err)
-		}
-
-		if _, err := io.Copy(interactorSourceFile, interactorBundleFile); err != nil {
-			return fmt.Errorf("error copying custom interactor source code: %w", err)
-		}
-		interactorBundleFile.Close()
-		interactorSourceFile.Close()
-
-		if err := e.FileService.RemoveFileTree(filePathBundleInteractor); err != nil {
-			return fmt.Errorf("error removing custom interactor source code: %w", err)
-		}
-
-		if err := func() error {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			return e.InteractorProgramService.Compile(ctx, e.filePathInteractorSource, e.filePathInteractorBinary)
-		}(); err != nil {
-			return fmt.Errorf("error compiling custom interactor: %w", err)
-		}
+	var err error
+	e.testCases, err = listTestCases(e.FileService)
+	if err != nil {
+		return fmt.Errorf("error listing test cases: %w", err)
 	}
+	e.numTestCases = len(e.testCases)
 
+	return nil
+}
+
+// preparePrograms downloads the solution and compiles it together with the custom interactor if
+// present.
+func (e *Executor) preparePrograms() error {
 	e.filePathSolutionSource = filesPathPrefixSolution + e.SolutionProgramService.GetSourceFileExtension()
 	if _, err := e.FileService.DownloadFile(e.filePathSolutionSource, e.SolutionRequestURL, e.SolutionRequestHeaders); err != nil {
 		return fmt.Errorf("error downloading problem solution: %w", err)
 	}
 
 	e.filePathSolutionBinary = filesPathPrefixSolution + e.SolutionProgramService.GetBinaryFileExtension()
-	if err := func() error {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		return e.SolutionProgramService.Compile(ctx, e.filePathSolutionSource, e.filePathSolutionBinary)
-	}(); err != nil {
+	if err := e.SolutionProgramService.Compile(context.TODO(), e.filePathSolutionSource, e.filePathSolutionBinary); err != nil {
 		return fmt.Errorf("error compiling problem solution: %w", err)
 	}
 
-	testCases, err := listTestCases(e.FileService)
-	if err != nil {
-		return fmt.Errorf("error listing test cases: %w", err)
-	}
-
-	// define run function based on the given interactor string
-	var runFunc func(*testCaseFiles) error
-	var errString string
-	switch e.Interactor {
-	case NoInteractor:
-		runFunc = e.runWithoutInteractor
-		errString = "error running without interactor"
-	case DefaultInteractor:
-		runFunc = e.runWithDefaultInteractor
-		errString = "error running with default interactor"
-	case CustomInteractor:
-		runFunc = e.runWithCustomInteractor
-		errString = "error running with custom interactor"
-	default:
-		return fmt.Errorf(
-			"invalid interactor, got '%s', want one in {%s}", e.Interactor,
-			strings.Join([]string{NoInteractor, DefaultInteractor, CustomInteractor}, ", "),
-		)
-	}
-
-	for _, testCase := range testCases {
-		if err := runFunc(testCase); err != nil {
-			return fmt.Errorf("%s: %w", errString, err)
+	if e.InteractorProgramService != nil {
+		e.filePathInteractorSource = filesPathPrefixInteractor + e.InteractorProgramService.GetSourceFileExtension()
+		if err := e.FileService.MoveFileTree(filePathBundleInteractor, e.filePathInteractorSource); err != nil {
+			return fmt.Errorf("error moving interactor source code: %w", err)
 		}
 
-		if err := e.FileService.UploadFile(testCase.output, e.UploadAuthorizedServerURL); err != nil {
-			return fmt.Errorf("error uploading output file '%s': %w", testCase.output, err)
+		e.filePathInteractorBinary = filesPathPrefixInteractor + e.InteractorProgramService.GetBinaryFileExtension()
+		if err := e.InteractorProgramService.Compile(context.TODO(), e.filePathInteractorSource, e.filePathInteractorBinary); err != nil {
+			return fmt.Errorf("error compiling custom interactor: %w", err)
 		}
 	}
 
 	return nil
+}
+
+// executeTestCases loops over the test cases to execute them and upload their outputs.
+func (e *Executor) executeTestCases() error {
+	runFunc, err := e.getRunFunction()
+	if err != nil {
+		return err
+	}
+
+	// upload outputs in a worker
+	jobs := make(chan string, e.numTestCases)
+	done := make(chan error, 1)
+	go func() {
+		for i := 0; i < e.numTestCases; i++ {
+			testCaseOutput, more := <-jobs
+			if !more {
+				done <- nil
+				return
+			}
+			if err := e.FileService.UploadFile(testCaseOutput, e.UploadAuthorizedServerURL); err != nil {
+				done <- fmt.Errorf("error uploading test case output: %w", err)
+				return
+			}
+		}
+
+		done <- nil
+	}()
+
+	for _, testCase := range e.testCases {
+		if err := runFunc(testCase); err != nil {
+			close(jobs)
+			if jobErr := <-done; err != nil {
+				return multierror.Append(err, jobErr)
+			}
+			return err
+		}
+
+		jobs <- testCase.output
+	}
+
+	return <-done
+}
+
+// getRunFunction reads e.Interactor to return the appropriate run function.
+func (e *Executor) getRunFunction() (func(testCase *testCaseFiles) error, error) {
+	switch e.Interactor {
+	case NoInteractor:
+		return e.runWithoutInteractor, nil
+	case DefaultInteractor:
+		return e.runWithDefaultInteractor, nil
+	case CustomInteractor:
+		return e.runWithCustomInteractor, nil
+	default:
+		return nil, fmt.Errorf(
+			"invalid interactor, got '%s', want one in {%s}", e.Interactor,
+			strings.Join([]string{NoInteractor, DefaultInteractor, CustomInteractor}, ", "),
+		)
+	}
 }
 
 // runWithoutInteractor executes the problem solution without interactor (only feeds input and
