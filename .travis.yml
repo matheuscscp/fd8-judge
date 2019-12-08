@@ -1,6 +1,7 @@
 # Travis CI Build configuration
 # See https://config.travis-ci.com/ for reference.
 
+# only affects "push to branch" trigger, "pull request" trigger still builds other branches
 branches:
   only:
   - master
