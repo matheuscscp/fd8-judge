@@ -8,16 +8,10 @@ branches:
 
 jobs:
   include:
-  - stage: lint
-    language: go
-    go:
-    - "1.13"
-    script: make lint
-
-  - stage: test-and-coverage
+  - stage: Lint, test and coverage
     language: go
     go:
     - "1.13"
     script:
-    - make test cov/coverage.txt
+    - make lint test cov/coverage.txt
     - bash <(curl -s https://codecov.io/bash)
