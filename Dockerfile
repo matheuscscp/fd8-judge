@@ -17,10 +17,12 @@ RUN go install -mod=vendor
 
 # create working image
 FROM alpine
-WORKDIR /workspace/
+
+# for c++11 program service
+RUN apk add g++
+
+# copy application
 COPY --from=build /go/bin/fd8-judge /usr/local/bin/
 
 # confirm application works
 RUN fd8-judge | grep 'fd8-judge is an open source cloud-native online judge.'
-
-CMD ["fd8-judge"]
