@@ -34,7 +34,7 @@ clean:
 # gen and clean-gen (artifacts generation: mocks, protos...)
 # ==================================================================================================
 
-INTERFACES := `grep -rls ./pkg ./judge -e 'interface {$$'`
+INTERFACES := `grep -rls ./pkg ./judge ./test/mocks/ -e 'interface {$$'`
 MOCKS := $(shell echo $(INTERFACES) | sed 's/\.\//\.\/test\/mocks\/gen\//g')
 
 .PHONY: gen

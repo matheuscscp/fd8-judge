@@ -119,10 +119,8 @@ func (c *DefaultCage) Execute() error {
 		return err
 	}
 
-	if err := c.runtime.Exec(c.ExecPath, c.ExecArgs, nil); err != nil {
-		return fmt.Errorf("error in exec syscall: %w", err)
-	}
-	return nil // never really happens, but go can't guess
+	err := c.runtime.Exec(c.ExecPath, c.ExecArgs, nil)
+	return fmt.Errorf("error in exec syscall: %w", err) // never runs, or runs with non-nil err
 }
 
 // restrictTimeLimit enforces the time limit option, setting the maximum amount of time the process

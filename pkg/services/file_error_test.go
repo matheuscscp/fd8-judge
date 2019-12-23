@@ -929,7 +929,8 @@ func TestMoveFileTreeError(t *testing.T) {
 				err: fmt.Errorf("error moving file tree: %w", fmt.Errorf("error")),
 			},
 			mocks: func() {
-				mockRuntime.EXPECT().Rename(gomock.Any(), gomock.Any()).Return(fmt.Errorf("error"))
+				cleanEmpty := filepath.Clean("")
+				mockRuntime.EXPECT().Rename(cleanEmpty, cleanEmpty).Return(fmt.Errorf("error"))
 			},
 		},
 	}
