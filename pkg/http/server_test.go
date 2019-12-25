@@ -23,7 +23,7 @@ func Test(t *testing.T) {
 	server.HTTPSRandomPort = true
 	server.CertFile = "../../test/tls/cert-file.crt"
 	server.KeyFile = "../../test/tls/key-file.key"
-	server.HandlerFactory = func(ctx context.Context) (nethttp.Handler, error) {
+	server.HandlerFactory = func(context.Context, string) (nethttp.Handler, error) {
 		return nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 			w.WriteHeader(nethttp.StatusOK)
 		}), nil

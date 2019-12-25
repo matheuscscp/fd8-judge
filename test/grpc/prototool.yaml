@@ -1,0 +1,22 @@
+# prototool configuration.
+# See
+# https://github.com/uber/prototool/blob/dev/etc/config/example/prototool.yaml
+# for reference.
+
+protoc:
+  version: 3.8.0
+  includes:
+  - proto/                        # root of imports
+  - ../../third_party/googleapis/ # grpc-gateway protos
+
+generate:
+  go_options:
+    import_path: github.com/matheuscscp/fd8-judge/test/grpc
+  plugins:
+  - name: go
+    flags: paths=source_relative,plugins=grpc
+    output: protogen/
+  - name: grpc-gateway
+    type: go
+    flags: paths=source_relative
+    output: protogen/

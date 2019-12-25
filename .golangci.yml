@@ -1,23 +1,16 @@
 # golangci-linter configuration
 # See https://github.com/golangci/golangci-lint#config-file for reference.
 
-run:
-  build-tags:
-    - unit
-    - integration
-  skip-dirs:
-    - protogen/
-
 linters-settings:
   depguard:
     list-type: blacklist
     include-go-root: true
     packages:
-      - log                               # prefer github.com/sirupsen/logrus
-      - github.com/gogo/protobuf          # prefer github.com/golang/protobuf
-      - gotest.tools                      # prefer github.com/stretchr/testify
-      - github.com/magiconair/properties  # prefer github.com/stretchr/testify
-      - golang.org/x/xerrors              # prefer fmt.Errorf with error wrapping
+    - log                               # prefer github.com/sirupsen/logrus
+    - github.com/gogo/protobuf          # prefer github.com/golang/protobuf
+    - gotest.tools                      # prefer github.com/stretchr/testify
+    - github.com/magiconair/properties  # prefer github.com/stretchr/testify
+    - golang.org/x/xerrors              # prefer fmt.Errorf with error wrapping
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 30
@@ -39,26 +32,26 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    - deadcode
-    - depguard
-    - errcheck
-    - gocyclo
-    - gofmt
-    - goimports
-    - golint
-    - govet
-    - ineffassign
-    - megacheck # gosimple, staticcheck and unused as a single linter
-    - misspell
-    - prealloc
-    - scopelint
-    - structcheck
-    - typecheck
-    - unconvert
-    - varcheck
+  - deadcode
+  - depguard
+  - errcheck
+  - gocyclo
+  - gofmt
+  - goimports
+  - golint
+  - govet
+  - ineffassign
+  - megacheck # gosimple, staticcheck and unused as a single linter
+  - misspell
+  - prealloc
+  - scopelint
+  - structcheck
+  - typecheck
+  - unconvert
+  - varcheck
 
 issues:
   exclude-rules:
-    - path: _test\.go
-      linters:
-        - scopelint
+  - path: _test\.go
+    linters:
+    - scopelint

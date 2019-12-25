@@ -12,12 +12,14 @@ export GOFLAGS
 MOCKGEN := go run github.com/golang/mock/mockgen
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/cmd/golangci-lint
 GOCOVMERGE := go run github.com/wadey/gocovmerge
+PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
 
 # ==================================================================================================
 # build and clean
 # ==================================================================================================
 
 SOURCE_FILES := $(shell find . -name '*.go' | egrep -v 'test|vendor|tools')
+
 BUILD_TARGETS := bin/fd8-judge
 
 .PHONY: build
@@ -34,18 +36,24 @@ clean:
 # gen and clean-gen (artifacts generation: mocks, protos...)
 # ==================================================================================================
 
-INTERFACES := `grep -rls ./pkg ./judge ./test/mocks/ -e 'interface {$$'`
+INTERFACES := `grep -rls ./pkg ./judge ./test/mocks -e 'interface {$$'`
 MOCKS := $(shell echo $(INTERFACES) | sed 's/\.\//\.\/test\/mocks\/gen\//g')
 
-.PHONY: gen
-gen: $(MOCKS)
+TEST_PROTOS := $(shell ls test/grpc/proto/*)
+PROTOS := test/grpc/protogen
 
-./test/mocks/gen/%: ./%
+.PHONY: gen
+gen: $(MOCKS) $(PROTOS)
+
+test/mocks/gen/%: %
 	$(MOCKGEN) -source $< -package $$(basename $$(dirname "$<")) -destination $@
+
+test/grpc/protogen: $(TEST_PROTOS)
+	rm -rf $@; cd $$(dirname "$@"); $(PROTOTOOL) generate
 
 .PHONY: clean-gen
 clean-gen:
-	rm -rf $(MOCKS)
+	rm -rf $(MOCKS) $(PROTOS)
 
 # ==================================================================================================
 # fix, lint, test and coverage
@@ -58,7 +66,8 @@ UNIT_COVERAGE_FILE := cov/unit.out
 INTEGRATION_COVERAGE_FILE := cov/integration.out
 COVERAGE_FILES := $(UNIT_COVERAGE_FILE) $(INTEGRATION_COVERAGE_FILE)
 
-TEST_GARBAGE_FILES := judge/serverFiles/ judge/bundle/ judge/interactor* judge/solution* judge/outputs*
+TEST_GARBAGE_FILES := judge/serverFiles/ judge/bundle/ judge/interactor* judge/solution*
+TEST_GARBAGE_FILES += judge/outputs*
 
 .PHONY: fix
 fix:
@@ -74,11 +83,13 @@ test: test-unit test-integration
 
 .PHONY: test-unit
 test-unit: clean-test cov
-	go test $(TESTABLE_PACKAGES) -race -coverpkg=./... -tags=unit -coverprofile=$(UNIT_COVERAGE_FILE)
+	go test $(TESTABLE_PACKAGES) -race -coverpkg=./... \
+		-tags=unit -coverprofile=$(UNIT_COVERAGE_FILE)
 
 .PHONY: test-integration
 test-integration: clean-test cov bin/fd8-judge
-	go test $(TESTABLE_PACKAGES) -race -coverpkg=./... -p 1 -tags=integration -coverprofile=$(INTEGRATION_COVERAGE_FILE)
+	go test $(TESTABLE_PACKAGES) -race -coverpkg=./... -p 1 \
+		-tags=integration -coverprofile=$(INTEGRATION_COVERAGE_FILE)
 
 .PHONY: clean-test
 clean-test:

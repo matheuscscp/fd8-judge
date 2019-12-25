@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package fd8_judge_grpc_test_api;
+
+option go_package = "protogen";
+
+import "google/api/annotations.proto";
+
+// TestService is a gRPC service for automatic tests.
+service TestService {
+  // SayHello receives a HelloMessage and replies another HelloMessage with its string doubled.
+  rpc SayHello (HelloMessage) returns (HelloMessage) {
+    option (google.api.http) = {
+      get: "/hello"
+    };
+  }
+}
+
+// HelloMessage is a protobuf message for automatic tests.
+message HelloMessage {
+  string hello_string = 1;
+}

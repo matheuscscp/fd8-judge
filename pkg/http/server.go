@@ -18,9 +18,9 @@ import (
 
 type (
 	// HandlerFactory is a function used to create the net/http.Handler for the main server.
-	HandlerFactory func(ctx context.Context) (nethttp.Handler, error)
+	HandlerFactory func(ctx context.Context, endpoint string) (nethttp.Handler, error)
 
-	// Server exposes HTTPEndpoint with the net/http.Handler returned by HTTPHandlerFactory,
+	// Server exposes HTTPEndpoint with the net/http.Handler returned by HandlerFactory,
 	// HTTPSEndpoint with the same net/http.Handler and an InternalEndpoint routing GET /health to
 	// HealthHandler; the response of HealthHandler is used by WaitForReady() to determine if the
 	// server is ready.
@@ -319,7 +319,11 @@ func (s *Server) closeListeners() {
 
 // configureServer creates the net/http.Server used to serve HTTP and HTTPSEndpoints.
 func (s *Server) configureServer(ctx context.Context) error {
-	handler, err := s.HandlerFactory(ctx)
+	endpoint := s.HTTPSEndpoint
+	if s.httpListener != nil {
+		endpoint = s.HTTPEndpoint
+	}
+	handler, err := s.HandlerFactory(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("error creating http server handler: %w", err)
 	}

@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
-	"github.com/hashicorp/go-multierror"
 	mocks "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/http"
 	mockInterfaces "github.com/matheuscscp/fd8-judge/test/mocks/gen/test/mocks"
+
+	"github.com/golang/mock/gomock"
+	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -99,7 +100,7 @@ func TestServeError(t *testing.T) {
 		"create-handler-error": {
 			input: testInput{
 				server: &Server{
-					HandlerFactory: func(context.Context) (nethttp.Handler, error) {
+					HandlerFactory: func(context.Context, string) (nethttp.Handler, error) {
 						return nil, fmt.Errorf("error")
 					},
 					settleChannel: make(chan struct{}, 1),
@@ -119,7 +120,7 @@ func TestServeError(t *testing.T) {
 				server: &Server{
 					HTTPRandomPort:  true,
 					HTTPSRandomPort: true,
-					HandlerFactory: func(context.Context) (nethttp.Handler, error) {
+					HandlerFactory: func(context.Context, string) (nethttp.Handler, error) {
 						return nil, nil
 					},
 					Logger:        logrus.WithField("app", "test"),
