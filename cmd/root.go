@@ -18,3 +18,8 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
+// AddCommand adds a command to the root command.
+func AddCommand(cmd *cobra.Command) {
+	rootCmd.AddCommand(cmd)
+}

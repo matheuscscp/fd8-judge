@@ -131,8 +131,8 @@ const (
 	stopped
 )
 
-// NewServer creates or only initializes (if server is nil) the runtime of a server with the default
-// runtime if runtime is nil, and also initializes other fields that compose internal state.
+// NewServer creates or only initializes (if server is not nil) the runtime of a server with the
+// default runtime if runtime is nil, and also initializes other fields that compose internal state.
 func NewServer(server *Server, runtime serverRuntime) *Server {
 	if runtime == nil {
 		runtime = &serverDefaultRuntime{}

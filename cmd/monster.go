@@ -25,7 +25,7 @@ func defineMonsterCommand() {
 		Use:   "monster",
 		Short: "Program used to test the cage.",
 		Long:  "Program with options to set various bad behaviors to test the cage.",
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(*cobra.Command, []string) {
 			runMonster(flags)
 		},
 	}

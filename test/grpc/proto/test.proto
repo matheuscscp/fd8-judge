@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package fd8_judge_grpc_test_api;
+package fd8_judge_grpc_test;
 
 option go_package = "protogen";
 

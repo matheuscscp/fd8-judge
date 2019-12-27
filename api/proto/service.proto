@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package fd8_judge_api;
+
+option go_package = "protogen";
+
+import "problem.proto";
+
+import "google/api/annotations.proto";
+
+// Service is the gRPC service for the fd8-judge API.
+service Service {
+  // CreateProblem creates a Problem.
+  rpc CreateProblem (CreateProblemRequest) returns (Problem) {
+    option (google.api.http) = {
+      post: "/problems"
+      body: "*"
+    };
+  }
+}

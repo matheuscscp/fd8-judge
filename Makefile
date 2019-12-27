@@ -39,14 +39,18 @@ clean:
 INTERFACES := `grep -rls ./pkg ./judge ./test/mocks -e 'interface {$$'`
 MOCKS := $(shell echo $(INTERFACES) | sed 's/\.\//\.\/test\/mocks\/gen\//g')
 
+API_PROTOS := $(shell ls api/proto/*)
 TEST_PROTOS := $(shell ls test/grpc/proto/*)
-PROTOS := test/grpc/protogen
+PROTOS := api/protogen test/grpc/protogen
 
 .PHONY: gen
 gen: $(MOCKS) $(PROTOS)
 
 test/mocks/gen/%: %
 	$(MOCKGEN) -source $< -package $$(basename $$(dirname "$<")) -destination $@
+
+api/protogen: $(API_PROTOS)
+	rm -rf $@; cd $$(dirname "$@"); $(PROTOTOOL) generate
 
 test/grpc/protogen: $(TEST_PROTOS)
 	rm -rf $@; cd $$(dirname "$@"); $(PROTOTOOL) generate

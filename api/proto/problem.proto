@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package fd8_judge_api;
+
+option go_package = "protogen";
+
+// CreateProblemRequest holds fields required for the CreateProblem operation.
+message CreateProblemRequest {
+  Problem problem = 1;
+}
+
+// Problem represents a programming problem with specific inputs and correct outputs.
+message Problem {
+  string key = 1;
+}
