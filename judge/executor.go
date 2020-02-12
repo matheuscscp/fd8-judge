@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/matheuscscp/fd8-judge/pkg/cage"
-	"github.com/matheuscscp/fd8-judge/pkg/services"
-
 	"github.com/hashicorp/go-multierror"
+	"github.com/matheuscscp/fd8-judge/pkg/cage"
+	"github.com/matheuscscp/fd8-judge/pkg/services/file"
+	"github.com/matheuscscp/fd8-judge/pkg/services/program"
 )
 
 type (
@@ -44,13 +44,13 @@ type (
 		UploadAuthorizedServerURL string
 
 		// FileService offers the necessary file operations for Executor.
-		FileService services.FileService
+		FileService file.Service
 
 		// InteractorProgramService offers methods to compile and execute the interactor.
-		InteractorProgramService services.ProgramService
+		InteractorProgramService program.Service
 
 		// SolutionProgramService offers methods to compile and execute the solution.
-		SolutionProgramService services.ProgramService
+		SolutionProgramService program.Service
 
 		// InteractorCage restricts the interactor process.
 		InteractorCage cage.Cage

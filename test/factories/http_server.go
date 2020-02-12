@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/file"
 )
 
 // HTTPServerFactory represents a factory of HTTP servers for testing.
@@ -75,7 +75,7 @@ func (f *HTTPServerFactory) NewDummyUploader() (net.Listener, *http.Server, erro
 			Method: http.MethodPut,
 			URL:    fmt.Sprintf("http://localhost:%d/upload", port),
 			Headers: http.Header{
-				"Content-Length": []string{r.Header.Get(services.FileUploadSizeHeader)},
+				"Content-Length": []string{r.Header.Get(file.FileUploadSizeHeader)},
 			},
 		}
 		payload, err := json.Marshal(uploadInfo)
@@ -139,7 +139,7 @@ func (f *HTTPServerFactory) NewFileServer(rootRelativePath string) (net.Listener
 		switch r.Method {
 		case http.MethodGet:
 			port := listener.Addr().(*net.TCPAddr).Port
-			path := filepath.Join(rootRelativePath, r.Header.Get(services.FileUploadNameHeader))
+			path := filepath.Join(rootRelativePath, r.Header.Get(file.FileUploadNameHeader))
 			uploadInfo := &struct {
 				Method, URL string
 				Headers     http.Header

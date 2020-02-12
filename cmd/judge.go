@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/matheuscscp/fd8-judge/judge"
-	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/file"
+	"github.com/matheuscscp/fd8-judge/pkg/services/program"
 	"github.com/spf13/cobra"
 )
 
@@ -73,11 +74,11 @@ func parseExecuteFlags(cmd *cobra.Command, flags *executeFlags) (*judge.Executor
 	if err := json.Unmarshal([]byte(flags.solutionRequestHeaders), &solutionHeaders); err != nil {
 		return nil, fmt.Errorf("error unmarshaling problem solution request headers: %w", err)
 	}
-	interactorProgramService, err := services.NewProgramService(flags.interactorProgramService, nil)
+	interactorProgramService, err := program.NewService(flags.interactorProgramService, nil)
 	if flags.interactorProgramService != "" && err != nil {
 		return nil, fmt.Errorf("error creating program service for interactor: %w", err)
 	}
-	solutionProgramService, err := services.NewProgramService(flags.solutionProgramService, nil)
+	solutionProgramService, err := program.NewService(flags.solutionProgramService, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating program service for solution: %w", err)
 	}
@@ -112,7 +113,7 @@ func parseExecuteFlags(cmd *cobra.Command, flags *executeFlags) (*judge.Executor
 		SolutionRequestHeaders:    solutionHeaders,
 		Interactor:                flags.interactor,
 		UploadAuthorizedServerURL: flags.uploadAuthorizedServerURL,
-		FileService:               services.NewFileService(nil),
+		FileService:               file.NewService(nil),
 		InteractorProgramService:  interactorProgramService,
 		SolutionProgramService:    solutionProgramService,
 		InteractorCage:            interactorCage,
@@ -122,7 +123,7 @@ func parseExecuteFlags(cmd *cobra.Command, flags *executeFlags) (*judge.Executor
 
 // bindExecuteFlags binds judge execute command flags.
 func bindExecuteFlags(cmd *cobra.Command, flags *executeFlags) {
-	availableProgramServices := strings.Join(services.GetProgramServices(), ", ")
+	availableProgramServices := strings.Join(program.GetServices(), ", ")
 	cmd.Flags().StringVar(
 		&flags.bundleRequestURL, "bundle-request-url", "",
 		"HTTP GET endpoint to download the problem bundle.",

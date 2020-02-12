@@ -1,12 +1,12 @@
 // +build integration
 
-package services_test
+package program_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/program"
 	"github.com/matheuscscp/fd8-judge/test/factories"
 	"github.com/matheuscscp/fd8-judge/test/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +33,7 @@ func TestCompileAndExecute(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			svc, err := services.NewProgramService(test.programService, nil)
+			svc, err := program.NewService(test.programService, nil)
 			assert.Equal(t, nil, err)
 
 			err = programFactory.Create(test.program, test.sourcePath)

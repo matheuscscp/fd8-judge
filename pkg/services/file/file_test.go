@@ -1,6 +1,6 @@
 // +build integration
 
-package services_test
+package file_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/file"
 	"github.com/matheuscscp/fd8-judge/test/factories"
 	"github.com/matheuscscp/fd8-judge/test/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +32,7 @@ func TestDownloadFile(t *testing.T) {
 		payload             = "PAYLOAD"
 		bytesToBeDownloaded = int64(len(payload))
 	)
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	bytesDownloaded, err := fileSvc.DownloadFile(
 		relativePath,
 		fmt.Sprintf("http://localhost:%d/dummy", port),
@@ -76,7 +76,7 @@ func TestUploadFile(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	// upload
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	err = fileSvc.UploadFile(relativePath, authorizedServerURL)
 	assert.Equal(t, nil, err)
 
@@ -100,7 +100,7 @@ func TestUploadFile(t *testing.T) {
 func TestCompressAndUncompress(t *testing.T) {
 	// cannot run these tests in parallel because they mess with the file system
 
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 
 	var tests = map[string]struct {
 		fixture                  factories.FileTreeNode
@@ -191,7 +191,7 @@ func TestCompressAndUncompress(t *testing.T) {
 }
 
 func TestRemoveFileTree(t *testing.T) {
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	fixture := fixtures.TestFolder()
 
 	err := fixture.Write(".")
@@ -209,7 +209,7 @@ func TestRemoveFileTree(t *testing.T) {
 }
 
 func TestOpenFile(t *testing.T) {
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	fixture, ok := fixtures.SingleFile().(*factories.File)
 	assert.Equal(t, true, ok)
 
@@ -231,7 +231,7 @@ func TestOpenFile(t *testing.T) {
 }
 
 func TestCreateFile(t *testing.T) {
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	fixture, ok := fixtures.SingleFile().(*factories.File)
 	assert.Equal(t, true, ok)
 
@@ -254,7 +254,7 @@ func TestCreateFile(t *testing.T) {
 }
 
 func TestListFiles(t *testing.T) {
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	fixture, ok := fixtures.TestFolderThreeFiles().(*factories.Folder)
 	assert.Equal(t, true, ok)
 
@@ -270,7 +270,7 @@ func TestListFiles(t *testing.T) {
 }
 
 func TestMoveFileTree(t *testing.T) {
-	fileSvc := services.NewFileService(nil)
+	fileSvc := file.NewService(nil)
 	fixture, ok := fixtures.TestFolderThreeFiles().(*factories.Folder)
 	assert.Equal(t, true, ok)
 

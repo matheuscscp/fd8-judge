@@ -11,7 +11,8 @@ import (
 
 	"github.com/matheuscscp/fd8-judge/judge"
 	"github.com/matheuscscp/fd8-judge/pkg/cage"
-	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/file"
+	"github.com/matheuscscp/fd8-judge/pkg/services/program"
 	"github.com/matheuscscp/fd8-judge/test/factories"
 	"github.com/matheuscscp/fd8-judge/test/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -70,13 +71,13 @@ func TestExecute(t *testing.T) {
 			err = programFactory.Create(test.solutionProgram, "./serverFiles/solution")
 			assert.Equal(t, nil, err)
 
-			var interactorProgramService services.ProgramService
+			var interactorProgramService program.Service
 			if test.interactor == judge.CustomInteractor {
-				interactorProgramService, err = services.NewProgramService(test.interactorProgramService, nil)
+				interactorProgramService, err = program.NewService(test.interactorProgramService, nil)
 				assert.Equal(t, nil, err)
 			}
 
-			solutionProgramService, err := services.NewProgramService(test.solutionProgramService, nil)
+			solutionProgramService, err := program.NewService(test.solutionProgramService, nil)
 			assert.Equal(t, nil, err)
 
 			cage := &factories.Cage{TestCage: cage.New(nil, nil), RootPath: ".."}
@@ -85,7 +86,7 @@ func TestExecute(t *testing.T) {
 				SolutionRequestURL:        fmt.Sprintf("http://localhost:%d/download?path=./serverFiles/solution", port),
 				Interactor:                test.interactor,
 				UploadAuthorizedServerURL: fmt.Sprintf("http://localhost:%d/upload", port),
-				FileService:               services.NewFileService(nil),
+				FileService:               file.NewService(nil),
 				InteractorProgramService:  interactorProgramService,
 				SolutionProgramService:    solutionProgramService,
 				InteractorCage:            cage,

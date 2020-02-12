@@ -1,6 +1,6 @@
 // +build unit
 
-package services_test
+package program_test
 
 import (
 	"context"
@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/matheuscscp/fd8-judge/pkg/services"
-	mockServices "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/program"
+
+	mockProgram "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/services/program"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewProgramServiceError(t *testing.T) {
-	svc, err := services.NewProgramService("inv", nil)
+func TestNewServiceError(t *testing.T) {
+	svc, err := program.NewService("inv", nil)
 	assert.Equal(t, nil, svc)
 	assert.Equal(t, fmt.Errorf("invalid program service, want one in {'c++11'}, got 'inv'"), err)
 }
@@ -23,7 +24,7 @@ func TestNewProgramServiceError(t *testing.T) {
 func TestCompileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockprogramServiceRuntime
+	var mockRuntime *mockProgram.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -59,12 +60,12 @@ func TestCompileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockprogramServiceRuntime(ctrl)
+			mockRuntime = mockProgram.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			programSvc, err := services.NewProgramService(test.input.programService, mockRuntime)
+			programSvc, err := program.NewService(test.input.programService, mockRuntime)
 			assert.Equal(t, nil, err)
 			err = programSvc.Compile(test.input.ctx, test.input.sourceRelativePath, test.input.binaryRelativePath)
 			assert.Equal(t, test.output, testOutput{

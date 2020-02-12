@@ -1,6 +1,6 @@
 // +build unit
 
-package services_test
+package file_test
 
 import (
 	"archive/tar"
@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/matheuscscp/fd8-judge/pkg/services"
+	"github.com/matheuscscp/fd8-judge/pkg/services/file"
 	"github.com/matheuscscp/fd8-judge/test/fixtures"
 	"github.com/matheuscscp/fd8-judge/test/mocks"
-	mockServices "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/services"
+	mockFile "github.com/matheuscscp/fd8-judge/test/mocks/gen/pkg/services/file"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +23,7 @@ import (
 func TestDownloadFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -104,12 +104,12 @@ func TestDownloadFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			bytes, err := fileSvc.DownloadFile(test.input.relativePath, test.input.url, test.input.headers)
 			assert.Equal(t, test.output, testOutput{
 				bytes: bytes,
@@ -122,7 +122,7 @@ func TestDownloadFileError(t *testing.T) {
 func TestUploadFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -166,8 +166,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(nil, fmt.Errorf("error"))
 			},
@@ -183,8 +183,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 201,
@@ -204,8 +204,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -230,8 +230,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -257,8 +257,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -285,8 +285,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -314,8 +314,8 @@ func TestUploadFileError(t *testing.T) {
 				}, nil)
 				mockRuntime.EXPECT().Do(&http.Request{
 					Header: http.Header{
-						services.FileUploadNameHeader: []string{"."},
-						services.FileUploadSizeHeader: []string{"0"},
+						file.FileUploadNameHeader: []string{"."},
+						file.FileUploadSizeHeader: []string{"0"},
 					},
 				}).Return(&http.Response{
 					StatusCode: 200,
@@ -342,12 +342,12 @@ func TestUploadFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			err := fileSvc.UploadFile(test.input.relativePath, test.input.authorizedServerURL)
 			assert.Equal(t, test.output, testOutput{
 				err: err,
@@ -359,7 +359,7 @@ func TestUploadFileError(t *testing.T) {
 func TestCompressError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -402,12 +402,12 @@ func TestCompressError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			err := fileSvc.Compress(test.input.inputRelativePath, test.input.outputRelativePath)
 			assert.Equal(t, test.output, testOutput{
 				err: err,
@@ -419,7 +419,7 @@ func TestCompressError(t *testing.T) {
 func TestVisitNodeForCompressionError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -505,12 +505,12 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime).(interface { // comment to skip mockgen
+			fileSvc := file.NewService(mockRuntime).(interface { // comment to skip mockgen
 				VisitNodeForCompression(
 					outTar *tar.Writer,
 					inputRelativePath string,
@@ -536,7 +536,7 @@ func TestVisitNodeForCompressionError(t *testing.T) {
 func TestUncompressError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -672,12 +672,12 @@ func TestUncompressError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			err := fileSvc.Uncompress(test.input.inputRelativePath, test.input.outputRelativePath)
 			assert.Equal(t, test.output, testOutput{
 				err: err,
@@ -689,7 +689,7 @@ func TestUncompressError(t *testing.T) {
 func TestRemoveFileTreeError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -719,12 +719,12 @@ func TestRemoveFileTreeError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			err := fileSvc.RemoveFileTree(test.input.relativePath)
 			assert.Equal(t, test.output, testOutput{
 				err: err,
@@ -736,7 +736,7 @@ func TestRemoveFileTreeError(t *testing.T) {
 func TestOpenFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -767,12 +767,12 @@ func TestOpenFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			file, err := fileSvc.OpenFile(test.input.relativePath)
 			assert.Equal(t, test.output, testOutput{
 				file: file,
@@ -785,7 +785,7 @@ func TestOpenFileError(t *testing.T) {
 func TestCreateFileError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -828,12 +828,12 @@ func TestCreateFileError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			file, err := fileSvc.CreateFile(test.input.relativePath)
 			assert.Equal(t, test.output, testOutput{
 				file: file,
@@ -846,7 +846,7 @@ func TestCreateFileError(t *testing.T) {
 func TestListFilesError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -865,7 +865,7 @@ func TestListFilesError(t *testing.T) {
 	}{
 		"no-such-folder-error": {
 			output: testOutput{
-				err:       &services.NoSuchFolderError{Path: filepath.Clean("")},
+				err:       &file.NoSuchFolderError{Path: filepath.Clean("")},
 				errString: fmt.Sprintf("no such folder: '%s'", filepath.Clean("")),
 			},
 			mocks: func() {
@@ -889,12 +889,12 @@ func TestListFilesError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			files, err := fileSvc.ListFiles(test.input.relativePath)
 			assert.Equal(t, test.output, testOutput{
 				files:     files,
@@ -908,7 +908,7 @@ func TestListFilesError(t *testing.T) {
 func TestMoveFileTreeError(t *testing.T) {
 	t.Parallel()
 
-	var mockRuntime *mockServices.MockdefaultFileServiceRuntime
+	var mockRuntime *mockFile.MockserviceRuntime
 
 	type (
 		testInput struct {
@@ -939,12 +939,12 @@ func TestMoveFileTreeError(t *testing.T) {
 			// mocks
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRuntime = mockServices.NewMockdefaultFileServiceRuntime(ctrl)
+			mockRuntime = mockFile.NewMockserviceRuntime(ctrl)
 			if test.mocks != nil {
 				test.mocks()
 			}
 
-			fileSvc := services.NewFileService(mockRuntime)
+			fileSvc := file.NewService(mockRuntime)
 			err := fileSvc.MoveFileTree(test.input.oldRelativePath, test.input.newRelativePath)
 			assert.Equal(t, test.output, testOutput{
 				err: err,
