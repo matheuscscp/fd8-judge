@@ -60,6 +60,10 @@ type (
 		// HealthHandler serves GET http://InternalEndpoint/health.
 		HealthHandler nethttp.Handler
 
+		// RegisterInternalHandlers is a hook to register custom handlers at http://InternalEndpoint,
+		// except GET /health which is already required.
+		RegisterInternalHandlers func(*mux.Router)
+
 		// Logger is used to emit logs when the starts and stops.
 		Logger logrus.FieldLogger
 
@@ -340,6 +344,9 @@ func (s *Server) configureServer(ctx context.Context) error {
 func (s *Server) configureInternalServer() {
 	router := mux.NewRouter()
 	router.Handle("/health", s.HealthHandler).Methods(nethttp.MethodGet)
+	if s.RegisterInternalHandlers != nil {
+		s.RegisterInternalHandlers(router)
+	}
 
 	s.internalServer = &nethttp.Server{
 		Addr:    s.InternalEndpoint,

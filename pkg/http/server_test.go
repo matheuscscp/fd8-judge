@@ -12,6 +12,7 @@ import (
 
 	"github.com/matheuscscp/fd8-judge/pkg/http"
 
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,6 +32,11 @@ func Test(t *testing.T) {
 	server.HealthHandler = nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusOK)
 	})
+	server.RegisterInternalHandlers = func(router *mux.Router) {
+		router.Handle("/metrics", nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+			w.WriteHeader(nethttp.StatusOK)
+		})).Methods(nethttp.MethodGet)
+	}
 	server.Logger = logrus.WithField("app", "test")
 
 	// start
@@ -53,6 +59,15 @@ func Test(t *testing.T) {
 	tr := &nethttp.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	client := &nethttp.Client{Transport: tr}
 	resp, err = client.Get(fmt.Sprintf("https://localhost%s", server.HTTPSEndpoint))
+	if err != nil {
+		t.Error(err)
+	} else {
+		resp.Body.Close()
+		assert.Equal(t, nethttp.StatusOK, resp.StatusCode)
+	}
+
+	// make http request to internal endpoint with custom handler
+	resp, err = nethttp.Get(fmt.Sprintf("http://localhost%s/metrics", server.InternalEndpoint))
 	if err != nil {
 		t.Error(err)
 	} else {
