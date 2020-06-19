@@ -47,7 +47,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	// make http request
-	resp, err := nethttp.Get(fmt.Sprintf("http://localhost%s", server.HTTPEndpoint))
+	resp, err := nethttp.Get(fmt.Sprintf("http://%s", server.HTTPEndpoint))
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -58,7 +58,7 @@ func Test(t *testing.T) {
 	// make https request
 	tr := &nethttp.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	client := &nethttp.Client{Transport: tr}
-	resp, err = client.Get(fmt.Sprintf("https://localhost%s", server.HTTPSEndpoint))
+	resp, err = client.Get(fmt.Sprintf("https://%s", server.HTTPSEndpoint))
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -67,7 +67,7 @@ func Test(t *testing.T) {
 	}
 
 	// make http request to internal endpoint with custom handler
-	resp, err = nethttp.Get(fmt.Sprintf("http://localhost%s/metrics", server.InternalEndpoint))
+	resp, err = nethttp.Get(fmt.Sprintf("http://%s/metrics", server.InternalEndpoint))
 	if err != nil {
 		t.Error(err)
 	} else {

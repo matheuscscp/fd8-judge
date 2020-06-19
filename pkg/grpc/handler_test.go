@@ -109,7 +109,7 @@ func GetHandlerFactory(t *testing.T, opts *grpc.Options) {
 
 	// make REST request
 	resp, err := nethttp.Get(
-		fmt.Sprintf("http://localhost%s/hello?hello_string=hello%%2C+world%%21", server.HTTPEndpoint),
+		fmt.Sprintf("http://%s/hello?hello_string=hello%%2C+world%%21", server.HTTPEndpoint),
 	)
 	if err != nil {
 		t.Error(err)

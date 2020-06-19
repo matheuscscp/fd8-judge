@@ -281,7 +281,7 @@ func (s *Server) assignRandomPorts(endpoints []*string) {
 	// replace or append port suffixes
 	re := regexp.MustCompilePOSIX("(:[0-9]*$)|($)")
 	for i, endpoint := range endpoints {
-		*endpoint = re.ReplaceAllString(*endpoint, fmt.Sprintf(":%v", p+i))
+		*endpoint = re.ReplaceAllString(*endpoint, fmt.Sprintf("localhost:%v", p+i))
 	}
 }
 
