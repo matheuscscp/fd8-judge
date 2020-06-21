@@ -123,6 +123,7 @@ func TestServeError(t *testing.T) {
 					HandlerFactory: func(context.Context, string) (nethttp.Handler, error) {
 						return nil, nil
 					},
+					HealthHandler: nethttp.HandlerFunc(func(nethttp.ResponseWriter, *nethttp.Request) {}),
 					Logger:        logrus.WithField("app", "test"),
 					stopChannel:   make(chan struct{}, 3),
 					settleChannel: make(chan struct{}, 1),

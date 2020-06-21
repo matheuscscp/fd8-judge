@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 )
@@ -62,7 +61,7 @@ type (
 
 		// RegisterInternalHandlers is a hook to register custom handlers at http://InternalEndpoint,
 		// except GET /health which is already required.
-		RegisterInternalHandlers func(*mux.Router)
+		RegisterInternalHandlers func(*nethttp.ServeMux)
 
 		// Logger is used to emit logs when the starts and stops.
 		Logger logrus.FieldLogger
@@ -342,15 +341,15 @@ func (s *Server) configureServer(ctx context.Context) error {
 
 // configureInternalServer creates the net/http.Server used to serve InternalEndpoint.
 func (s *Server) configureInternalServer() {
-	router := mux.NewRouter()
-	router.Handle("/health", s.HealthHandler).Methods(nethttp.MethodGet)
+	mux := nethttp.NewServeMux()
+	mux.Handle("/health", s.HealthHandler)
 	if s.RegisterInternalHandlers != nil {
-		s.RegisterInternalHandlers(router)
+		s.RegisterInternalHandlers(mux)
 	}
 
 	s.internalServer = &nethttp.Server{
 		Addr:    s.InternalEndpoint,
-		Handler: router,
+		Handler: mux,
 	}
 }
 
